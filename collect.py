@@ -67,7 +67,7 @@ def main():
         t=get('https://rsm0kk.github.io/toptoonchat/',raw=True)
         i=t.find('const D=')+8; D,_=json.JSONDecoder().raw_decode(t[i:])
         out=dict(source='https://rsm0kk.github.io/toptoonchat/ (탑툰챗 공개 API 스냅샷, 이상 ID 제외 본지표)',snapshot=D['meta']['snapshot'],dates=D['dates'],
-                 regions={r:{'cumS':D['agg'][D['meta']['main']][r]['cumS'],'dS':D['agg'][D['meta']['main']][r]['dS']} for r in ['KR','JP','TW','GLOBAL','ALL']},weekly=D['weekly'])
+                 regions={r:{'cumS':D['agg'][D['meta']['main']][r]['cumS'],'dS':D['agg'][D['meta']['main']][r]['dS']} for r in ['KR','JP','TW','GLOBAL','ALL']},weekly=D['weekly'],chars=D.get('chars',[]))
         json.dump(out,open(os.path.join(BASE,'benchmark','toptoonchat.json'),'w'),ensure_ascii=False); return len(out['dates'])
     def lezhin_jp():
         d=get('https://lezhin.jp/api/ranking?type=daily&genre_hash_id=01jpa35r8sspwk9zw6gz3je678&page_size=100',{'Accept':'application/json','X-Platform':'D'})
@@ -91,7 +91,20 @@ def main():
                         if img: break
             c.execute('insert into rankings values(?,?,?,?,?,?,?,?)',(ts,'snack',a['rank'],str(a['contentsId']),cd.get('title'),(cd.get('genreTag') or {}).get('name'),img,None))
         return len(arr)
-    run('price',price); run('topco',topco); run('lezhin_jp',lezhin_jp); run('snack',snack)
+    def topco_thumbs(limit=40):
+        f=os.path.join(BASE,'benchmark','topco_thumbs.json'); cache=json.load(open(f)) if os.path.exists(f) else {}
+        T=json.load(open(os.path.join(BASE,'benchmark','toptoonchat.json')))
+        todo=[i for i in sorted({str(c['id']) for c in T.get('chars',[])}) if i not in cache][:limit]
+        for i in todo:
+            try:
+                t=get(f'https://chat.toptoon.com/detail/character/{i}',raw=True)
+                s2=''.join(json.loads('"'+p+'"') for p in re.findall(r'self\.__next_f\.push\(\[1,"(.*?)"\]\)',t,re.S))
+                m=re.search(r'"thumbnail":"(https://showcase\.chat\.toptoon\.com/character/'+i+r'/[^"]+)"',s2)
+                cc=re.search(r'"chatCount":(\d+),"likeCount":(\d+)',s2)
+                cache[i]=dict(img=m.group(1) if m else None,like=int(cc.group(2)) if cc else None)
+            except Exception as e: cache[i]=dict(img=None,err=repr(e)[:80])
+        json.dump(cache,open(f,'w'),ensure_ascii=False); return f'{len(todo)} new / {len(cache)}'
+    run('price',price); run('topco',topco); run('topco_thumbs',topco_thumbs); run('lezhin_jp',lezhin_jp); run('snack',snack)
     run('teaz',teaz); run('lezhin_kr',lambda:lezhin('kr')); run('lezhin_us',lambda:lezhin('us')); run('play',play); run('appstore',appstore)
     c.commit(); print(ts,[r for r in c.execute('select source,ok,note from runs where ts=?',(ts,))])
 if __name__=='__main__': main()

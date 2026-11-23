@@ -132,6 +132,7 @@ payload = dict(
     fin=json.load(open(os.path.join(BASE, 'data', 'finance.json'))),
     price=json.load(open(os.path.join(BASE, 'data', 'price.json'))),
     topco=json.load(open(os.path.join(BASE, 'benchmark', 'toptoonchat.json'))),
+    topco_thumbs=json.load(open(os.path.join(BASE, 'benchmark', 'topco_thumbs.json'))) if os.path.exists(os.path.join(BASE, 'benchmark', 'topco_thumbs.json')) else {},
     runs=[dict(ts=r[0], src=r[1], ok=r[2], note=r[3]) for r in c.execute('select * from runs order by ts desc limit 30')],
 )
 tpl = open(os.path.join(BASE, 'template.html'), encoding='utf-8').read()

@@ -220,13 +220,14 @@ RENDER.apps=()=>{const h=$('#p-apps');
  table($('#ap4'),[{k:'country',l:'국가'},{k:'name',l:'앱'},{k:'rc',l:'평점 수',n:1,f:v=>nf(v)},{k:'rating',l:'평점',n:1,f:v=>nf(v,2)}],s,{k:'rc'})};
 
 RENDER.price=()=>{const p=D.price,h=$('#p-price');const n=p.c.length;
- h.innerHTML=`<div class="page-head"><h1>주가 · 020120 (KOSPI)</h1><p>실시간 위젯(TradingView, 지연 가능) + 일봉 3년(네이버, 매일 갱신)</p></div>
- <div class="card"><h2>실시간</h2><div class="tradingview-widget-container" style="height:360px"><div class="tradingview-widget-container__widget"></div></div><p class="cap" id="tvnote">위젯이 안 보이면 아래 일봉 차트를 사용</p></div>
+ const NV='https://ssl.pstatic.net/imgfinance/chart/item/';const NVK=[['area/day','당일'],['area/week','1주'],['area/month3','3개월'],['area/year','1년'],['candle/day','일봉'],['candle/week','주봉'],['candle/month','월봉']];
+ h.innerHTML=`<div class="page-head"><h1>주가 · 020120 (KOSPI)</h1><p>네이버 증권 차트(장중 실시간, 1분마다 새로고침) + 일봉 3년(매일 갱신) · <a href="https://finance.naver.com/item/main.naver?code=020120" target="_blank" rel="noopener">네이버 증권에서 열기 ↗</a></p></div>
+ <div class="card"><div class="bar" style="box-shadow:none;border:0;padding:0;margin-bottom:8px"><h2 style="margin:0 8px 0 0">네이버 증권</h2><div class="seg" id="nvk">${NVK.map(([k,l])=>`<button data-k="${k}">${l}</button>`).join('')}</div><span class="muted" id="nvt" style="margin-left:auto"></span></div>
+ <div style="background:#fff;border-radius:10px;padding:8px;text-align:center"><img id="nvimg" alt="키다리스튜디오 네이버 증권 차트" style="max-width:100%;height:auto"></div></div>
  <div class="card"><div class="bar" style="box-shadow:none;border:0;padding:0;margin-bottom:8px"><div class="seg" id="rng">${[['1M',22],['3M',66],['6M',130],['1Y',250],['3Y',9999]].map(([l,v])=>`<button data-v="${v}">${l}</button>`).join('')}</div><span class="muted" id="rngst" style="margin-left:auto"></span></div>
  <div class="ch-box tall"><canvas id="px1"></canvas></div><div class="ch-box" style="height:120px"><canvas id="px2"></canvas></div></div>`;
- const s=document.createElement('script');s.src='https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';s.async=true;
- s.innerHTML=JSON.stringify({symbols:[['키다리스튜디오','KRX:020120|1D']],chartOnly:false,width:'100%',height:340,locale:'kr',colorTheme:document.documentElement.dataset.theme=='dark'||matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light',autosize:true,showVolume:true,chartType:'area',dateRanges:['1d|1','1m|30','3m|60','12m|1D','60m|1W','all|1M']});
- h.querySelector('.tradingview-widget-container').appendChild(s);
+ let nk='area/day';const nvLoad=()=>{$('#nvimg').src=`${NV}${nk}/020120.png?t=${Date.now()}`;$('#nvt').textContent='갱신 '+new Date().toLocaleTimeString('ko-KR');h.querySelectorAll('#nvk button').forEach(b=>b.classList.toggle('on',b.dataset.k==nk))};
+ h.querySelectorAll('#nvk button').forEach(b=>b.onclick=()=>{nk=b.dataset.k;nvLoad()});nvLoad();clearInterval(window._nvT);window._nvT=setInterval(()=>{if(location.hash=='#price')nvLoad()},60000);
  function draw(k){const i0=Math.max(0,n-k);const d=p.d.slice(i0),c=p.c.slice(i0),v=p.vol.slice(i0).map((x,i)=>x*c[i]/1e8);
   $('#rngst').innerHTML=`${d[0].slice(2,4)}.${d[0].slice(4,6)}.${d[0].slice(6)} → ${nf(c[c.length-1])}원 <b class="${cls(c[c.length-1]-c[0])}">${pct((c[c.length-1]/c[0]-1)*100)}</b> · 고 ${nf(Math.max(...c))} / 저 ${nf(Math.min(...c))}`;
   const lab=d.map(x=>`${x.slice(2,4)}.${x.slice(4,6)}.${x.slice(6)}`);
@@ -306,8 +307,19 @@ RENDER.calc=()=>{const h=$('#p-calc');
 RENDER.topco=()=>{const T=D.topco,h=$('#p-topco');const P=PAL();
  h.innerHTML=`<div class="page-head"><h1>탑코(엔키AX) 탑툰챗 비교</h1><p>탑툰챗 공개 트래커(${esc(T.source)}) 일별 세션 ${T.dates.length}일 + DS투자증권 출시 초기 지표. 세션과 티즈 메시지는 단위가 달라 수준보다 방향을 비교</p></div>
  <div class="two"><div class="card"><h2>탑툰챗 하루 세션 (국가별)</h2><div class="ch-box"><canvas id="t1"></canvas></div></div><div class="card"><h2>탑툰챗 누적 세션</h2><div class="ch-box"><canvas id="t2"></canvas></div></div></div>
- <div class="card"><h2>출시 후 경과로 본 비교</h2><div id="t3"></div></div>`;
+ <div class="card"><h2>출시 후 경과로 본 비교</h2><div id="t3"></div></div>
+ <div class="page-head" style="margin-top:18px"><h1 style="font-size:18px">탑툰챗 캐릭터별</h1><p>트래커 스냅샷 ${esc(T.snapshot)} · 세션 = 시작된 대화 수(chatCount), 조회 = 페이지 진입(viewCount), 전환율 = 세션÷조회. 국가 버튼으로 지역 선택, '이상 ID'는 원 트래커가 조회 이상으로 본지표에서 뺀 캐릭터</p></div>
+ <div class="bar"><span class="lbl">국가</span><div class="seg" id="treg">${['KR','JP','TW','GLOBAL'].map(r=>`<button data-r="${r}">${r}</button>`).join('')}</div><label class="lbl" style="display:flex;gap:4px;align-items:center"><input type="checkbox" id="tex"> 이상 ID 포함</label></div><div id="tchars"></div>`;
  const regs=['KR','JP','TW','GLOBAL'];
+ let reg='KR';const drawChars=()=>{h.querySelectorAll('#treg button').forEach(b=>b.classList.toggle('on',b.dataset.r==reg));
+  const rows=(T.chars||[]).filter(c=>c.r==reg&&($('#tex').checked||!c.ex)).map(c=>Object.assign({},c,{avg:c.dsl?c.cumS/c.dsl:null,img:(D.topco_thumbs[String(c.id)]||{}).img,like:(D.topco_thumbs[String(c.id)]||{}).like,coh:c.cohort,genre:c.cohort}));
+  cardView($('#tchars'),{rows,filters:[...new Set(rows.map(c=>c.coh))],
+   sorts:[['cumS','누적 세션'],['dS','24h 세션'],['avg','출시 후 일평균'],['cumV','누적 조회'],['conv','전환율'],['dsl','출시 경과일','asc']],
+   card:c=>`<a class="wc" href="https://chat.toptoon.com/detail/character/${c.id}" target="_blank" rel="noopener"><div class="im">${img(c.img,c.name)}<span class="rk">${esc(c.name)}</span>${c.ex?'<span class="ch" style="color:var(--up)">이상 ID</span>':''}</div>
+    <div class="bd"><div class="g"><span class="chip">${esc(String(c.coh||'').replace(/_/g,' '))}</span><span class="chip">${nf(c.dsl)}일차</span></div>
+    <div class="m"><span>누적 세션</span><b>${nf(c.cumS)}</b><span>24h 세션</span><b>${nf(c.dS,1)}</b><span>출시 후 일평균</span><b>${nf(c.avg,1)}</b><span>누적 조회</span><b>${nf(c.cumV)}</b><span>당일 전환율</span><b>${nf(c.conv,1)}%</b><span>누적 전환율</span><b>${nf(c.convCum,1)}%</b></div></div></a>`,
+   cols:[{k:'name',l:'캐릭터'},{k:'coh',l:'코호트'},{k:'dsl',l:'경과일',n:1,f:v=>nf(v)},{k:'cumS',l:'누적 세션',n:1,f:v=>nf(v)},{k:'dS',l:'24h 세션',n:1,f:v=>nf(v,1)},{k:'avg',l:'일평균',n:1,f:v=>nf(v,1)},{k:'cumV',l:'누적 조회',n:1,f:v=>nf(v)},{k:'conv',l:'전환율',n:1,f:v=>nf(v,1)+'%'},{k:'convCum',l:'누적 전환율',n:1,f:v=>nf(v,1)+'%'}]})};
+ h.querySelectorAll('#treg button').forEach(b=>b.onclick=()=>{reg=b.dataset.r;drawChars()});$('#tex').onchange=drawChars;drawChars();
  chart('t1',{type:'line',data:{labels:T.dates.map(d=>d.slice(5)),datasets:regs.map((r,j)=>({label:r,data:T.regions[r].dS,borderColor:P[j],pointRadius:0,tension:.25}))},options:{scales:{x:{ticks:{maxTicksLimit:8}},y:{}}}});
  chart('t2',{type:'line',data:{labels:T.dates.map(d=>d.slice(5)),datasets:[{label:'ALL 누적',data:T.regions.ALL.cumS,borderColor:P[0],pointRadius:0}]},options:{scales:{x:{ticks:{maxTicksLimit:8}},y:{ticks:{callback:v=>nf(v/1e4)+'만'}}}}});
  table($('#t3'),[{k:'item',l:'지표'},{k:'topco',l:'탑툰챗 (2026.03 출시)'},{k:'teaz',l:'티즈 (2026.10.19 출시)'}],[
