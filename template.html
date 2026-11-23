@@ -132,6 +132,35 @@ function cardView(host,opt){const st={k:opt.sorts[0][0],dir:opt.sorts[0][2]||'de
 const img=(src,alt)=>src?`<img src="${esc(src)}" alt="${esc(alt)}" decoding="async" referrerpolicy="no-referrer" onerror="this.style.display='none'">`:'';
 const rkCh=v=>v==null?'':v>0?`<span class="ch" style="color:var(--up)">▲${v}</span>`:v<0?`<span class="ch" style="color:var(--down)">▼${-v}</span>`:`<span class="ch">–</span>`;
 
+
+/* ---------- 일별·주별 흐름 차트 ---------- */
+const kday=iso=>{const d=new Date(iso.length<=10?iso+'T12:00:00+09:00':iso+'+09:00');return d.toISOString().slice(0,10)};
+function dailyFromCum(pts){const o={};const s=pts.filter(p=>p[1]!=null).slice().sort((a,b)=>a[0]<b[0]?-1:1);
+  for(let i=1;i<s.length;i++){const h=(new Date(s[i][0]+'+09:00')-new Date(s[i-1][0]+'+09:00'))/36e5;if(h<6)continue;o[s[i][0].slice(0,10)]=(s[i][1]-s[i-1][1])*24/h}
+  return Object.entries(o).sort()}
+function weekKey(d){const x=new Date(d+'T12:00:00Z');const wd=(x.getUTCDay()+6)%7;x.setUTCDate(x.getUTCDate()-wd);return x.toISOString().slice(0,10)}
+function weekly(daily){const g={};daily.forEach(([d,v])=>{if(v==null)return;const k=weekKey(d);(g[k]=g[k]||[]).push(v)});
+  return Object.entries(g).sort().map(([k,v])=>({k,n:v.length,sum:v.reduce((a,b)=>a+b,0),est:v.reduce((a,b)=>a+b,0)/v.length*7}))}
+function flowCard(host,o){/* o:{title,cap,series:[{label,daily:[[date,v]]}],unit} */
+  const id='fl'+Math.random().toString(36).slice(2,8);let mode=o.mode||'d';
+  host.innerHTML=`<div class="card"><div class="bar" style="box-shadow:none;border:0;padding:0;margin-bottom:6px"><h2 style="margin:0 8px 0 0">${o.title}</h2><div class="seg"><button data-m="d">일별</button><button data-m="w">주별</button></div><span class="muted" id="${id}s" style="margin-left:auto;white-space:normal"></span></div>${o.cap?`<p class="cap">${o.cap}</p>`:''}<div class="ch-box"><canvas id="${id}"></canvas></div></div>`;
+  function draw(){host.querySelectorAll('[data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m==mode));const P=PAL();const multi=o.series.length>1;
+   const ok=o.series.some(s=>s.daily.length>=1);
+   if(!ok){charts[id]&&charts[id].destroy();$('#'+id+'s').textContent='';host.querySelector('.ch-box').innerHTML=`<p class="cap" style="padding:40px 0;text-align:center">일별 증분은 수집 2일차(24시간 간격 스냅샷)부터 쌓입니다</p><canvas id="${id}" style="display:none"></canvas>`;return}
+   if(mode=='d'){const labels=[...new Set(o.series.flatMap(s=>s.daily.map(x=>x[0])))].sort();
+    const ds=o.series.map((s,j)=>{const m=Object.fromEntries(s.daily);return{type:multi?'line':'bar',label:s.label,data:labels.map(l=>m[l]??null),backgroundColor:P[j]+(multi?'':'cc'),borderColor:P[j],pointRadius:multi?0:2,tension:.25,yAxisID:'y'}});
+    if(!multi){const v=ds[0].data;ds.push({type:'line',label:'7일 이동평균',data:v.map((_,i)=>{const w=v.slice(Math.max(0,i-6),i+1).filter(x=>x!=null);return w.length?w.reduce((a,b)=>a+b,0)/w.length:null}),borderColor:P[4],pointRadius:0,borderWidth:2,yAxisID:'y'})}
+    chart(id,{data:{labels:labels.map(l=>l.slice(5)),datasets:ds},options:{scales:{x:{ticks:{maxTicksLimit:10}},y:{ticks:{callback:v=>nf(v)}}}}});
+    const s0=o.series[0].daily;const last=s0[s0.length-1],prev=s0[s0.length-8]||s0[0];
+    $('#'+id+'s').innerHTML=`${o.series[0].label} 최근 ${last[0].slice(5)} ${nf(last[1])}${o.unit||''}${s0.length>=8?` · 7일 전 대비 <b class="${cls(last[1]-prev[1])}">${pct((last[1]/prev[1]-1)*100)}</b>`:''}`}
+   else{const W=o.series.map(s=>weekly(s.daily));const labels=[...new Set(W.flatMap(w=>w.map(x=>x.k)))].sort();
+    const ds=o.series.map((s,j)=>{const m=Object.fromEntries(W[j].map(x=>[x.k,x]));return{type:'bar',label:s.label,data:labels.map(l=>m[l]?m[l].est:null),backgroundColor:P[j]+'cc',yAxisID:'y'}});
+    const tot=labels.map((l,i)=>ds.reduce((a,d)=>a+(d.data[i]||0),0));const g=tot.map((v,i)=>i?(v/tot[i-1]-1)*100:null);
+    ds.push({type:'line',label:'WoW 성장률(%)',data:g,borderColor:P[4],backgroundColor:P[4],yAxisID:'y1',pointRadius:3});
+    chart(id,{data:{labels:labels.map(l=>l.slice(5)+'주'),datasets:ds},options:{scales:{x:{stacked:multi},y:{stacked:multi,ticks:{callback:v=>nf(v)}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%'}}}}});
+    const L=labels.length-1,w0=W[0];$('#'+id+'s').innerHTML=`최근 주(${labels[L].slice(5)}~${W.every(w=>!w.length||w[w.length-1].n==7)?'':', 부분 주는 7일 환산'}) ${nf(tot[L])}${o.unit||''}${L?` · WoW <b class="${cls(g[L])}">${pct(g[L])}</b>`:''}${L>=4?` · 4주 전 대비 <b class="${cls(tot[L]-tot[L-4])}">${pct((tot[L]/tot[L-4]-1)*100)}</b>`:''}`}}
+  host.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;if(!$('#'+id))host.querySelector('.ch-box').innerHTML=`<canvas id="${id}"></canvas>`;draw()});draw()}
+
 /* ---------- 페이지 ---------- */
 const RENDER={};
 const tz=D.teaz;
@@ -165,17 +194,15 @@ RENDER.sum=()=>{const L=D.lezhin;const p=D.price;const n=p.c.length;const chg=(p
 
 RENDER.teaz=()=>{const h=$('#p-teaz');
  h.innerHTML=`<div class="page-head"><h1>AI챗 티즈 (myteaz.io)</h1><p>캐릭터별 누적 메시지(message_count). 수집 시작 ${D.first.slice(0,10)} · 출시 ${tz.days}일차</p></div>
- <div class="two"><div class="card"><h2>출시 후 누적 메시지 (재구성 + 실측)</h2><p class="cap">점선 = 캐릭터별 공개일부터 일정 속도 가정한 재구성(추정), 점 = 실측 스냅샷</p><div class="ch-box"><canvas id="tz1"></canvas></div></div>
+ <div class="two"><div id="tzf"></div>
  <div class="card"><h2>장르별 누적 메시지</h2><p class="cap">로맨스·BL이 86%</p><div class="ch-box"><canvas id="tz2"></canvas></div></div></div>
  <div id="tzc"></div>`;
  const pal=PAL();
- chart('tz1',{type:'line',data:{labels:tz.recon.map(x=>x[0].slice(5)),datasets:[{label:'재구성(추정)',data:tz.recon.map(x=>x[1]),borderColor:pal[0],borderDash:[5,4],pointRadius:0,tension:.2},
-   {label:'실측',data:tz.recon.map(x=>{const s=tz.series.filter(y=>y[0].slice(0,10)==x[0]);return s.length?s[s.length-1][1]:null}),borderColor:pal[4],backgroundColor:pal[4],showLine:false,pointRadius:5}]},
-   options:{scales:{x:{},y:{ticks:{callback:v=>nf(v)}}}}});
+ flowCard($('#tzf'),{title:'티즈 메시지 (일별·주별)',unit:'건',cap:`출시 후 ${tz.days}일 평균 하루 ${nf(tz.cum/tz.days)}건 · 상위 캐릭터는 아래 표에서 7일 증분으로 비교`,series:[{label:'전체',daily:dailyFromCum(tz.series)}].concat((tz.top||[]).map(t=>({label:t.name,daily:dailyFromCum(t.series)})))});
  const g={};tz.chars.forEach(c=>g[c.genre]=(g[c.genre]||0)+c.msgs);const gk=Object.keys(g).sort((a,b)=>g[b]-g[a]);
  chart('tz2',{type:'doughnut',data:{labels:gk,datasets:[{data:gk.map(k=>g[k]),backgroundColor:pal}]},options:{interaction:{mode:'nearest'},plugins:{legend:{position:'right',labels:{color:css('--sub')}}}}});
  cardView($('#tzc'),{rows:tz.chars,filters:gk,
-  sorts:[['msgs','누적'],['avg','공개 후 일평균'],['d1','24h 증분'],['d7','7일 증분'],['likes','좋아요'],['lz_rank','원작 레진 순위','asc']],
+  sorts:[['d1','24h 증분'],['d7','7일 증분'],['avg','공개 후 일평균'],['msgs','누적'],['likes','좋아요'],['lz_rank','원작 레진 순위','asc']],
   card:c=>`<a class="wc" ${c.url?`href="${esc(c.url)}" target="_blank" rel="noopener"`:''}><div class="im">${img(c.img,c.name)}<span class="rk">${esc(c.name)}</span></div>
    <div class="bd"><div class="g"><span class="chip">${esc(c.genre)}</span>${c.lz_rank?`<span class="chip">레진 ${c.lz_rank}위</span>`:''}</div><div class="t">${esc(c.work||c.tagline)}</div>
    <div class="m"><span>누적</span><b>${nf(c.msgs)}</b><span>공개 후 일평균</span><b>${nf(c.avg)}</b><span>24h</span><b class="${cls(c.d1)}">${sg(c.d1)}</b><span>7일</span><b>${sg(c.d7)}</b><span>좋아요</span><b>${nf(c.likes)}</b><span>공개</span><b>${c.pub.slice(5)}</b></div></div></a>`,
@@ -187,10 +214,11 @@ function lzPage(key,label,note){const L=D.lezhin[key];const h=$('#p-'+key);
  <div class="kpis"><div class="kpi"><div class="l">Top100 누적 조회</div><div class="v">${nf(L.series[L.series.length-1][1])}</div><div class="s">스냅샷 ${L.series.length}회</div></div>
  <div class="kpi"><div class="l">조회 증분(24h)</div><div class="v">${sg(L.dv)}</div><div class="s">공통 작품 기준</div></div>
  <div class="kpi"><div class="l">구독 증분(24h)</div><div class="v">${sg(L.ds)}</div><div class="s">공통 작품 기준</div></div></div>
- <div class="card"><h2>Top100 누적 조회 추이</h2><div class="ch-box"><canvas id="c-${key}"></canvas></div></div><div id="g-${key}"></div>`;
- chart('c-'+key,{type:'line',data:{labels:L.series.map(x=>x[0].slice(5,16).replace('T',' ')),datasets:[{label:'Top100 누적 조회',data:L.series.map(x=>x[1]),borderColor:PAL()[0],tension:.2}]},options:{scales:{x:{},y:{ticks:{callback:v=>nf(v)}}}}});
+ <div class="two"><div id="fv-${key}"></div><div id="fs-${key}"></div></div><div id="g-${key}"></div>`;
+ flowCard($('#fv-'+key),{title:'Top100 조회 (일별·주별)',unit:'회',cap:'두 스냅샷에 공통으로 있는 작품의 조회 증분, 24h 환산',series:[{label:'조회',daily:L.dv_daily||[]}]});
+ flowCard($('#fs-'+key),{title:'Top100 구독 (일별·주별)',unit:'명',cap:'공통 작품 구독 순증, 24h 환산',series:[{label:'구독',daily:L.ds_daily||[]}]});
  cardView($('#g-'+key),{rows:L.items,filters:gs,
-  sorts:[['rank','순위','asc'],['views','누적 조회'],['dv','조회 증분'],['subs','구독'],['ds','구독 증분'],['drank','순위 상승']],
+  sorts:[['rank','순위','asc'],['dv','24h 조회'],['ds','24h 구독'],['drank','순위 상승'],['views','누적 조회'],['subs','구독']],
   card:x=>`<a class="wc" ${x.url?`href="${esc(x.url)}" target="_blank" rel="noopener"`:''}><div class="im">${img(x.img,x.title)}<span class="rk">${x.rank}</span>${rkCh(x.drank)}</div>
    <div class="bd"><div class="t">${esc(x.title)}</div><div class="g">${esc(x.genre)}</div>
    <div class="m"><span>누적 조회</span><b>${nf(x.views)}</b><span>24h 조회</span><b class="${cls(x.dv)}">${sg(x.dv)}</b><span>구독</span><b>${nf(x.subs)}</b><span>24h 구독</span><b class="${cls(x.ds)}">${sg(x.ds)}</b></div></div></a>`,
@@ -211,11 +239,12 @@ RENDER.snack=()=>rankPage('snack',D.snack,'영상 · 레진스낵 숏드라마 �
 RENDER.apps=()=>{const h=$('#p-apps');
  h.innerHTML=`<div class="page-head"><h1>앱 · 국가별</h1><p>구글플레이 정확 설치수(국가별 스토어)와 앱스토어 평점 수. 플랫폼 이용자 저변의 선행지표</p></div>
  <div class="two"><div class="card"><h2>구글플레이 설치수</h2><div class="ch-box"><canvas id="ap1"></canvas></div></div><div class="card"><h2>앱스토어 평점 수</h2><div class="ch-box"><canvas id="ap2"></canvas></div></div></div>
- <div class="card"><h2>구글플레이</h2><div id="ap3"></div></div><div class="card"><h2>앱스토어</h2><div id="ap4"></div></div>`;
+ <div id="apf"></div><div class="card"><h2>구글플레이</h2><div id="ap3"></div></div><div class="card"><h2>앱스토어</h2><div id="ap4"></div></div>`;
  const a=D.apps.slice().sort((x,y)=>y.installs-x.installs);
  chart('ap1',{type:'bar',data:{labels:a.map(x=>x.name),datasets:[{label:'설치수',data:a.map(x=>x.installs),backgroundColor:PAL()[0]}]},options:{indexAxis:'y',scales:{x:{ticks:{callback:v=>nf(v/1e4)+'만'}},y:{}}}});
  const s=D.appstore.slice().sort((x,y)=>y.rc-x.rc);
  chart('ap2',{type:'bar',data:{labels:s.map(x=>x.country.toUpperCase()+' · '+x.name.slice(0,14)),datasets:[{label:'평점 수',data:s.map(x=>x.rc),backgroundColor:PAL()[2]}]},options:{indexAxis:'y',scales:{x:{},y:{}}}});
+ flowCard($('#apf'),{title:'구글플레이 신규 설치 (일별·주별)',unit:'건',cap:'정확 설치수 증분, 24h 환산',series:Object.entries(D.app_series||{}).map(([k,v])=>({label:k,daily:dailyFromCum(v)}))});
  table($('#ap3'),[{k:'name',l:'앱'},{k:'country',l:'국가'},{k:'installs',l:'설치수',n:1,f:v=>nf(v)},{k:'d',l:'24h 증분',n:1,f:v=>sg(v),cl:cls},{k:'rc',l:'평점 수',n:1,f:v=>nf(v)},{k:'rating',l:'평점',n:1,f:v=>nf(v,2)}],a,{k:'installs'});
  table($('#ap4'),[{k:'country',l:'국가'},{k:'name',l:'앱'},{k:'rc',l:'평점 수',n:1,f:v=>nf(v)},{k:'rating',l:'평점',n:1,f:v=>nf(v,2)}],s,{k:'rc'})};
 
@@ -301,22 +330,25 @@ RENDER.calc=()=>{const h=$('#p-calc');
 
 RENDER.topco=()=>{const T=D.topco,h=$('#p-topco');const P=PAL();
  h.innerHTML=`<div class="page-head"><h1>탑코(엔키AX) 탑툰챗 비교</h1><p>탑툰챗 공개 트래커(${esc(T.source)}) 일별 세션 ${T.dates.length}일 + DS투자증권 출시 초기 지표. 세션과 티즈 메시지는 단위가 달라 수준보다 방향을 비교</p></div>
- <div class="two"><div class="card"><h2>탑툰챗 하루 세션 (국가별)</h2><div class="ch-box"><canvas id="t1"></canvas></div></div><div class="card"><h2>탑툰챗 누적 세션</h2><div class="ch-box"><canvas id="t2"></canvas></div></div></div>
+ <div id="tf1"></div><div class="two"><div id="tf2"></div><div class="card"><h2>국가별 주간 성장</h2><div id="tw"></div></div></div>
  <div class="card"><h2>출시 후 경과로 본 비교</h2><div id="t3"></div></div>
  <div class="page-head" style="margin-top:18px"><h1 style="font-size:18px">탑툰챗 캐릭터별</h1><p>트래커 스냅샷 ${esc(T.snapshot)} · 세션 = 시작된 대화 수(chatCount), 조회 = 페이지 진입(viewCount), 전환율 = 세션÷조회. 국가 버튼으로 지역 선택, '이상 ID'는 원 트래커가 조회 이상으로 본지표에서 뺀 캐릭터</p></div>
  <div class="bar"><span class="lbl">국가</span><div class="seg" id="treg">${['KR','JP','TW','GLOBAL'].map(r=>`<button data-r="${r}">${r}</button>`).join('')}</div><label class="lbl" style="display:flex;gap:4px;align-items:center"><input type="checkbox" id="tex"> 이상 ID 포함</label></div><div id="tchars"></div>`;
  const regs=['KR','JP','TW','GLOBAL'];
  let reg='KR';const drawChars=()=>{h.querySelectorAll('#treg button').forEach(b=>b.classList.toggle('on',b.dataset.r==reg));
-  const rows=(T.chars||[]).filter(c=>c.r==reg&&($('#tex').checked||!c.ex)).map(c=>Object.assign({},c,{avg:c.dsl?c.cumS/c.dsl:null,img:(D.topco_thumbs[String(c.id)]||{}).img?`img/topco/${c.id}.jpg`:null,like:(D.topco_thumbs[String(c.id)]||{}).like,coh:c.cohort,genre:c.cohort}));
+  const rows=(T.chars||[]).filter(c=>c.r==reg&&($('#tex').checked||!c.ex)).map(c=>Object.assign({},c,{avg:c.dsl?c.cumS/c.dsl:null,img:(D.topco_thumbs[String(c.id)]||{}).img?`img/topco/${c.id}.jpg`:null,like:(D.topco_thumbs[String(c.id)]||{}).like,coh:c.cohort,genre:c.cohort,w7:(D.topco_d7||{})[c.r+'-'+c.id]}));
   cardView($('#tchars'),{rows,filters:[...new Set(rows.map(c=>c.coh))],
-   sorts:[['cumS','누적 세션'],['dS','24h 세션'],['avg','출시 후 일평균'],['cumV','누적 조회'],['conv','전환율'],['dsl','출시 경과일','asc']],
+   sorts:[['dS','24h 세션'],['w7','7일 세션'],['cumS','누적 세션'],['avg','출시 후 일평균'],['cumV','누적 조회'],['conv','전환율'],['dsl','출시 경과일','asc']],
    card:c=>`<a class="wc" href="https://chat.toptoon.com/detail/character/${c.id}" target="_blank" rel="noopener"><div class="im">${img(c.img,c.name)}<span class="rk">${esc(c.name)}</span>${c.ex?'<span class="ch" style="color:var(--up)">이상 ID</span>':''}</div>
     <div class="bd"><div class="g"><span class="chip">${esc(String(c.coh||'').replace(/_/g,' '))}</span><span class="chip">${nf(c.dsl)}일차</span></div>
-    <div class="m"><span>누적 세션</span><b>${nf(c.cumS)}</b><span>24h 세션</span><b>${nf(c.dS,1)}</b><span>출시 후 일평균</span><b>${nf(c.avg,1)}</b><span>누적 조회</span><b>${nf(c.cumV)}</b><span>당일 전환율</span><b>${nf(c.conv,1)}%</b><span>누적 전환율</span><b>${nf(c.convCum,1)}%</b></div></div></a>`,
-   cols:[{k:'name',l:'캐릭터'},{k:'coh',l:'코호트'},{k:'dsl',l:'경과일',n:1,f:v=>nf(v)},{k:'cumS',l:'누적 세션',n:1,f:v=>nf(v)},{k:'dS',l:'24h 세션',n:1,f:v=>nf(v,1)},{k:'avg',l:'일평균',n:1,f:v=>nf(v,1)},{k:'cumV',l:'누적 조회',n:1,f:v=>nf(v)},{k:'conv',l:'전환율',n:1,f:v=>nf(v,1)+'%'},{k:'convCum',l:'누적 전환율',n:1,f:v=>nf(v,1)+'%'}]})};
+    <div class="m"><span>누적 세션</span><b>${nf(c.cumS)}</b><span>24h 세션</span><b>${nf(c.dS,1)}</b><span>7일 세션</span><b>${c.w7==null?'수집 중':nf(c.w7)}</b><span>출시 후 일평균</span><b>${nf(c.avg,1)}</b><span>누적 조회</span><b>${nf(c.cumV)}</b><span>당일 전환율</span><b>${nf(c.conv,1)}%</b><span>누적 전환율</span><b>${nf(c.convCum,1)}%</b></div></div></a>`,
+   cols:[{k:'name',l:'캐릭터'},{k:'coh',l:'코호트'},{k:'dsl',l:'경과일',n:1,f:v=>nf(v)},{k:'cumS',l:'누적 세션',n:1,f:v=>nf(v)},{k:'dS',l:'24h 세션',n:1,f:v=>nf(v,1)},{k:'w7',l:'7일 세션',n:1,f:v=>nf(v)},{k:'avg',l:'일평균',n:1,f:v=>nf(v,1)},{k:'cumV',l:'누적 조회',n:1,f:v=>nf(v)},{k:'conv',l:'전환율',n:1,f:v=>nf(v,1)+'%'},{k:'convCum',l:'누적 전환율',n:1,f:v=>nf(v,1)+'%'}]})};
  h.querySelectorAll('#treg button').forEach(b=>b.onclick=()=>{reg=b.dataset.r;drawChars()});$('#tex').onchange=drawChars;drawChars();
- chart('t1',{type:'line',data:{labels:T.dates.map(d=>d.slice(5)),datasets:regs.map((r,j)=>({label:r,data:T.regions[r].dS,borderColor:P[j],pointRadius:0,tension:.25}))},options:{scales:{x:{ticks:{maxTicksLimit:8}},y:{}}}});
- chart('t2',{type:'line',data:{labels:T.dates.map(d=>d.slice(5)),datasets:[{label:'ALL 누적',data:T.regions.ALL.cumS,borderColor:P[0],pointRadius:0}]},options:{scales:{x:{ticks:{maxTicksLimit:8}},y:{ticks:{callback:v=>nf(v/1e4)+'만'}}}}});
+ const rd=r=>T.dates.map((d,i)=>[d,T.regions[r].dS[i]]).filter(x=>x[1]!=null);
+ flowCard($('#tf1'),{title:'탑툰챗 세션 (국가별, 일별·주별)',unit:'건',mode:'w',cap:'원 트래커의 하루 세션 증가(24h 환산, 이상 ID 제외). 주별 = 주간 합(부분 주는 7일 환산)',series:regs.map(r=>({label:r,daily:rd(r)}))});
+ flowCard($('#tf2'),{title:'탑툰챗 전체 세션',unit:'건',cap:'4개 지역 합',series:[{label:'전체',daily:rd('ALL')}]});
+ table($('#tw'),[{k:'r',l:'국가'},{k:'w',l:'최근 주(7일 환산)',n:1,f:v=>nf(v)},{k:'wow',l:'WoW',n:1,f:v=>pct(v),cl:cls},{k:'w4',l:'4주 전 대비',n:1,f:v=>pct(v),cl:cls},{k:'sep',l:'9월 일평균',n:1,f:v=>nf(v)},{k:'nov',l:'11월 일평균',n:1,f:v=>nf(v)},{k:'mom',l:'9월→11월',n:1,f:v=>pct(v),cl:cls}],
+  regs.concat(['ALL']).map(r=>{const w=weekly(rd(r));const L=w.length-1;const sep=avgM(T,r,'2026-09'),nov=avgM(T,r,'2026-11');return{r,w:w[L].est,wow:L?(w[L].est/w[L-1].est-1)*100:null,w4:L>=4?(w[L].est/w[L-4].est-1)*100:null,sep,nov,mom:(nov/sep-1)*100}}),{k:'w'});
  table($('#t3'),[{k:'item',l:'지표'},{k:'topco',l:'탑툰챗 (2026.03 출시)'},{k:'teaz',l:'티즈 (2026.10.19 출시)'}],[
   {item:'출시 첫 분기 챗 매출',topco:'1Q26 약 2.5억 (3월 1개월)',teaz:`4Q26 추정 상한 ${nf(annRev(tz.basis,50)/4,2)}억 (현재 속도)`},
   {item:'다음 분기',topco:'2Q26 약 20.4억 (×8.2), 국내 플랫폼의 22%',teaz:'1Q27 지표로 확인'},

@@ -56,6 +56,8 @@ for k, r in T[last].items():
         tagline=x.get('tagline'), work=x.get('source_work_title'), platform=x.get('source_platform'),
         lz_rank=alias_rank.get(lz_alias), url=f"https://myteaz.io/chat/r/{x.get('room_public_id')}" if x.get('room_public_id') else None))
 series = [(t, sum(v[6] or 0 for v in T[t].values())) for t in tz]
+top_ids = sorted(T[last], key=lambda k: -(T[last][k][6] or 0))[:5]
+top = [dict(name=T[last][k][2], series=[(t, T[t][k][6]) for t in tz if k in T[t]]) for k in top_ids]
 daily = [(b[0], (b[1] - a[1]) * 24 / hrs(a[0], b[0])) for a, b in zip(series[:-1], series[1:]) if hrs(a[0], b[0]) >= 6]
 cum = series[-1][1]; days = (P(last).date() - LAUNCH).days
 basis = daily[-1][1] if daily else cum / days
@@ -87,7 +89,14 @@ def lezhin(cc):
     ser = [(t, sum(v[5] or 0 for v in D[t].values())) for t in ts]
     tdv = sum(x['dv'] for x in items if x['dv'] is not None) if p else None
     tds = sum(x['ds'] for x in items if x['ds'] is not None) if p else None
-    return dict(items=items, series=ser, dv=tdv, ds=tds)
+    dvd, dsd = {}, {}
+    for a, b in zip(ts[:-1], ts[1:]):
+        h2 = hrs(a, b)
+        if h2 < 6: continue
+        com = set(D[a]) & set(D[b])
+        dvd[b[:10]] = sum(D[b][k][5] - D[a][k][5] for k in com) * 24 / h2
+        dsd[b[:10]] = sum(D[b][k][6] - D[a][k][6] for k in com) * 24 / h2
+    return dict(items=items, series=ser, dv=tdv, ds=tds, dv_daily=sorted(dvd.items()), ds_daily=sorted(dsd.items()))
 
 
 def ranking(src, prefix):
@@ -120,15 +129,24 @@ for k, r in PD[pts[-1]].items():
     pr = PD[pp].get(k) if pp else None
     apps.append(dict(name=pn.get(k, (k, ''))[0], country=pn.get(k, ('', '?'))[1], pkg=k, installs=r[2], rc=r[3], rating=r[4],
                      d=(r[2] - pr[2]) * 24 / hrs(pp, pts[-1]) if pr and r[2] and pr[2] else None))
+app_series = {pn.get(k, (k,''))[0]: [(t, PD[t][k][2]) for t in pts if k in PD[t] and PD[t][k][2]] for k in pn}
 ast = [dict(country=r[0], name=r[1], rc=r[2], rating=r[3]) for r in c.execute(
     'select country,name,rating_count,rating from appstore where ts=(select max(ts) from appstore)')]
 
-payload = dict(
+hf = os.path.join(BASE, 'benchmark', 'topco_chars_hist.json')
+topco_d7 = {}
+if os.path.exists(hf):
+    H = json.load(open(hf)); ks = sorted(H)
+    if len(ks) > 1:
+        lastk = ks[-1]; base = next((k for k in reversed(ks[:-1]) if (P(lastk) - P(k)).days >= 6), ks[0])
+        days_ = max((P(lastk) - P(base)).total_seconds() / 86400, 1)
+        topco_d7 = {k: (v[0] - H[base][k][0]) * 7 / days_ for k, v in H[lastk].items() if k in H[base]}
+payload = dict(topco_d7=topco_d7,
     generated=dt.datetime.now(KST).strftime('%Y-%m-%d %H:%M'), last=last, nsnap=len(tz), first=tz[0],
-    teaz=dict(chars=chars, series=series, daily=daily, recon=recon, cum=cum, days=days, basis=basis,
+    teaz=dict(chars=chars, series=series, top=top, daily=daily, recon=recon, cum=cum, days=days, basis=basis,
               basis_label='직전 24h 환산' if daily else f'출시 후 {days}일 평균'),
     lezhin=dict(kr=lezhin('kr'), us=lezhin('us'), jp=ranking('lezhin_jp', 'https://lezhin.jp/comic/')),
-    snack=ranking('snack', None), apps=apps, appstore=ast,
+    snack=ranking('snack', None), apps=apps, app_series=app_series, appstore=ast,
     fin=json.load(open(os.path.join(BASE, 'data', 'finance.json'))),
     price=json.load(open(os.path.join(BASE, 'data', 'price.json'))),
     topco=json.load(open(os.path.join(BASE, 'benchmark', 'toptoonchat.json'))),

@@ -68,7 +68,10 @@ def main():
         i=t.find('const D=')+8; D,_=json.JSONDecoder().raw_decode(t[i:])
         out=dict(source='https://rsm0kk.github.io/toptoonchat/ (탑툰챗 공개 API 스냅샷, 이상 ID 제외 본지표)',snapshot=D['meta']['snapshot'],dates=D['dates'],
                  regions={r:{'cumS':D['agg'][D['meta']['main']][r]['cumS'],'dS':D['agg'][D['meta']['main']][r]['dS']} for r in ['KR','JP','TW','GLOBAL','ALL']},weekly=D['weekly'],chars=D.get('chars',[]))
-        json.dump(out,open(os.path.join(BASE,'benchmark','toptoonchat.json'),'w'),ensure_ascii=False); return len(out['dates'])
+        json.dump(out,open(os.path.join(BASE,'benchmark','toptoonchat.json'),'w'),ensure_ascii=False)
+        hf=os.path.join(BASE,'benchmark','topco_chars_hist.json'); H=json.load(open(hf)) if os.path.exists(hf) else {}
+        H[D['meta']['snapshot']]={f"{x['r']}-{x['id']}":[x['cumS'],x['cumV']] for x in D.get('chars',[])}
+        json.dump(H,open(hf,'w'),ensure_ascii=False); return len(out['dates'])
     def lezhin_jp():
         d=get('https://lezhin.jp/api/ranking?type=daily&genre_hash_id=01jpa35r8sspwk9zw6gz3je678&page_size=100',{'Accept':'application/json','X-Platform':'D'})
         json.dump(d,open(os.path.join(rawdir,'lezhin_jp.json'),'w'),ensure_ascii=False)
