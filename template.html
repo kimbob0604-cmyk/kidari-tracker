@@ -129,7 +129,7 @@ function cardView(host,opt){const st={k:opt.sorts[0][0],dir:opt.sorts[0][2]||'de
   q('view').querySelectorAll('button').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;draw()});
   if(q('flt'))q('flt').querySelectorAll('button').forEach(b=>b.onclick=()=>{flt=flt==b.dataset.f?null:b.dataset.f;draw()});
   draw()}
-const img=(src,alt)=>src?`<img src="${esc(src)}" alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`:'';
+const img=(src,alt)=>src?`<img src="${esc(src)}" alt="${esc(alt)}" decoding="async" referrerpolicy="no-referrer" onerror="this.style.display='none'">`:'';
 const rkCh=v=>v==null?'':v>0?`<span class="ch" style="color:var(--up)">▲${v}</span>`:v<0?`<span class="ch" style="color:var(--down)">▼${-v}</span>`:`<span class="ch">–</span>`;
 
 /* ---------- 페이지 ---------- */
