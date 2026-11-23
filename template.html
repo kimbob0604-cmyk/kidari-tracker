@@ -220,14 +220,9 @@ RENDER.apps=()=>{const h=$('#p-apps');
  table($('#ap4'),[{k:'country',l:'국가'},{k:'name',l:'앱'},{k:'rc',l:'평점 수',n:1,f:v=>nf(v)},{k:'rating',l:'평점',n:1,f:v=>nf(v,2)}],s,{k:'rc'})};
 
 RENDER.price=()=>{const p=D.price,h=$('#p-price');const n=p.c.length;
- const NV='https://ssl.pstatic.net/imgfinance/chart/item/';const NVK=[['area/day','당일'],['area/week','1주'],['area/month3','3개월'],['area/year','1년'],['candle/day','일봉'],['candle/week','주봉'],['candle/month','월봉']];
- h.innerHTML=`<div class="page-head"><h1>주가 · 020120 (KOSPI)</h1><p>네이버 증권 차트(장중 실시간, 1분마다 새로고침) + 일봉 3년(매일 갱신) · <a href="https://finance.naver.com/item/main.naver?code=020120" target="_blank" rel="noopener">네이버 증권에서 열기 ↗</a></p></div>
- <div class="card"><div class="bar" style="box-shadow:none;border:0;padding:0;margin-bottom:8px"><h2 style="margin:0 8px 0 0">네이버 증권</h2><div class="seg" id="nvk">${NVK.map(([k,l])=>`<button data-k="${k}">${l}</button>`).join('')}</div><span class="muted" id="nvt" style="margin-left:auto"></span></div>
- <div style="background:#fff;border-radius:10px;padding:8px;text-align:center"><img id="nvimg" alt="키다리스튜디오 네이버 증권 차트" style="max-width:100%;height:auto"></div></div>
+ h.innerHTML=`<div class="page-head"><h1>주가 · 020120 (KOSPI)</h1><p>일봉 3년 · 네이버 증권, 매일 08:40 갱신 · <a href="https://finance.naver.com/item/main.naver?code=020120" target="_blank" rel="noopener">네이버 증권에서 열기 ↗</a></p></div>
  <div class="card"><div class="bar" style="box-shadow:none;border:0;padding:0;margin-bottom:8px"><div class="seg" id="rng">${[['1M',22],['3M',66],['6M',130],['1Y',250],['3Y',9999]].map(([l,v])=>`<button data-v="${v}">${l}</button>`).join('')}</div><span class="muted" id="rngst" style="margin-left:auto"></span></div>
  <div class="ch-box tall"><canvas id="px1"></canvas></div><div class="ch-box" style="height:120px"><canvas id="px2"></canvas></div></div>`;
- let nk='area/day';const nvLoad=()=>{$('#nvimg').src=`${NV}${nk}/020120.png?t=${Date.now()}`;$('#nvt').textContent='갱신 '+new Date().toLocaleTimeString('ko-KR');h.querySelectorAll('#nvk button').forEach(b=>b.classList.toggle('on',b.dataset.k==nk))};
- h.querySelectorAll('#nvk button').forEach(b=>b.onclick=()=>{nk=b.dataset.k;nvLoad()});nvLoad();clearInterval(window._nvT);window._nvT=setInterval(()=>{if(location.hash=='#price')nvLoad()},60000);
  function draw(k){const i0=Math.max(0,n-k);const d=p.d.slice(i0),c=p.c.slice(i0),v=p.vol.slice(i0).map((x,i)=>x*c[i]/1e8);
   $('#rngst').innerHTML=`${d[0].slice(2,4)}.${d[0].slice(4,6)}.${d[0].slice(6)} → ${nf(c[c.length-1])}원 <b class="${cls(c[c.length-1]-c[0])}">${pct((c[c.length-1]/c[0]-1)*100)}</b> · 고 ${nf(Math.max(...c))} / 저 ${nf(Math.min(...c))}`;
   const lab=d.map(x=>`${x.slice(2,4)}.${x.slice(4,6)}.${x.slice(6)}`);
