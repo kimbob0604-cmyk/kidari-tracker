@@ -312,7 +312,7 @@ RENDER.topco=()=>{const T=D.topco,h=$('#p-topco');const P=PAL();
  <div class="bar"><span class="lbl">국가</span><div class="seg" id="treg">${['KR','JP','TW','GLOBAL'].map(r=>`<button data-r="${r}">${r}</button>`).join('')}</div><label class="lbl" style="display:flex;gap:4px;align-items:center"><input type="checkbox" id="tex"> 이상 ID 포함</label></div><div id="tchars"></div>`;
  const regs=['KR','JP','TW','GLOBAL'];
  let reg='KR';const drawChars=()=>{h.querySelectorAll('#treg button').forEach(b=>b.classList.toggle('on',b.dataset.r==reg));
-  const rows=(T.chars||[]).filter(c=>c.r==reg&&($('#tex').checked||!c.ex)).map(c=>Object.assign({},c,{avg:c.dsl?c.cumS/c.dsl:null,img:(D.topco_thumbs[String(c.id)]||{}).img,like:(D.topco_thumbs[String(c.id)]||{}).like,coh:c.cohort,genre:c.cohort}));
+  const rows=(T.chars||[]).filter(c=>c.r==reg&&($('#tex').checked||!c.ex)).map(c=>Object.assign({},c,{avg:c.dsl?c.cumS/c.dsl:null,img:(D.topco_thumbs[String(c.id)]||{}).img?`img/topco/${c.id}.jpg`:null,like:(D.topco_thumbs[String(c.id)]||{}).like,coh:c.cohort,genre:c.cohort}));
   cardView($('#tchars'),{rows,filters:[...new Set(rows.map(c=>c.coh))],
    sorts:[['cumS','누적 세션'],['dS','24h 세션'],['avg','출시 후 일평균'],['cumV','누적 조회'],['conv','전환율'],['dsl','출시 경과일','asc']],
    card:c=>`<a class="wc" href="https://chat.toptoon.com/detail/character/${c.id}" target="_blank" rel="noopener"><div class="im">${img(c.img,c.name)}<span class="rk">${esc(c.name)}</span>${c.ex?'<span class="ch" style="color:var(--up)">이상 ID</span>':''}</div>
