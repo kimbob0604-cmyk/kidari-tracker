@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>키다리 트래커</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--text:#191f28;--sub:#4e5968;--muted:#8b95a1;--line:#e9ebee;--chip:#f2f4f6;--chip-on:#fff;--up:#d6453d;--down:#3a6fd8;--accent:#3182f6;--hover:#f7f8fa;--head-bg:rgba(255,255,255,.86);--shadow:0 1px 2px rgba(16,24,40,.04),0 4px 16px rgba(16,24,40,.05);--grid:#eef0f3;
+--c1:#3182f6;--c2:#f59e0b;--c3:#14a39a;--c4:#9b6bd3;--c5:#d6453d;--c6:#8b95a1;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101216;--card:#191c22;--text:#e8eaed;--sub:#b0b8c1;--muted:#7d8590;--line:#2a2e36;--chip:#242832;--chip-on:#343a46;--up:#ff7a72;--down:#6f9bff;--accent:#4b93ff;--hover:#20242c;--head-bg:rgba(25,28,34,.86);--shadow:none;--grid:#242832;--c1:#4b93ff;--c2:#f5b342;--c3:#2fc4b8;--c4:#b48ae8;--c5:#ff7a72;--c6:#7d8590;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101216;--card:#191c22;--text:#e8eaed;--sub:#b0b8c1;--muted:#7d8590;--line:#2a2e36;--chip:#242832;--chip-on:#343a46;--up:#ff7a72;--down:#6f9bff;--accent:#4b93ff;--hover:#20242c;--head-bg:rgba(25,28,34,.86);--shadow:none;--grid:#242832;--c1:#4b93ff;--c2:#f5b342;--c3:#2fc4b8;--c4:#b48ae8;--c5:#ff7a72;--c6:#7d8590;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 "Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo",sans-serif;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+a{color:inherit}button,select,input{font:inherit;color:inherit}
+.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:20px;padding:10px 32px;background:var(--head-bg);border-bottom:1px solid var(--line);-webkit-backdrop-filter:saturate(1.6) blur(12px);backdrop-filter:saturate(1.6) blur(12px)}
+.brand{font-weight:800;font-size:16px;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.brand::before{content:"";width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--up),#f59e0b 55%,var(--accent))}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{padding:6px 12px;border-radius:999px;white-space:nowrap;color:var(--sub);text-decoration:none;cursor:pointer;border:0;background:none;min-height:34px}
+.tab:hover{background:var(--chip);color:var(--text)}.tab.on{background:var(--text);color:var(--card);font-weight:600}
+.top-right{margin-left:auto;display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;white-space:nowrap}
+.icon-btn{background:var(--card);border:1px solid var(--line);border-radius:8px;width:34px;height:34px;cursor:pointer}
+main{max-width:1240px;margin:0 auto;padding:18px 32px 40px}
+.page{display:none}.page.on{display:block}
+.page-head{margin:6px 2px 14px}.page-head h1{margin:0 0 2px;font-size:22px;font-weight:800;letter-spacing:-.03em}.page-head p{margin:0;color:var(--muted);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px 20px;margin-bottom:14px}
+.card h2{margin:0 0 4px;font-size:16px;font-weight:700}.cap{color:var(--muted);font-size:12.5px;margin:0 0 10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);cursor:pointer;text-align:left}
+.kpi:hover{background:var(--hover)}.kpi .l{font-size:12px;color:var(--muted)}.kpi .v{font-size:22px;font-weight:800;letter-spacing:-.02em}.kpi .s{font-size:12px;color:var(--sub)}
+.up{color:var(--up)}.down{color:var(--down)}.muted{color:var(--muted)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:12px;box-shadow:var(--shadow)}
+.seg{display:inline-flex;background:var(--chip);border-radius:10px;padding:3px;flex-wrap:wrap}
+.seg button{border:0;background:none;padding:5px 11px;border-radius:8px;cursor:pointer;color:var(--sub);white-space:nowrap;min-height:32px}
+.seg button.on{background:var(--chip-on);color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.dir{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:5px 12px;cursor:pointer;min-height:34px;font-weight:600}
+.lbl{font-size:12px;color:var(--muted);margin-right:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:12px}
+.wc{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;text-decoration:none;color:inherit}
+.wc:hover{border-color:var(--sub)}
+.wc .im{position:relative;aspect-ratio:3/4;background:var(--chip);overflow:hidden}
+.wc .im img{width:100%;height:100%;object-fit:cover;display:block}
+.wc .rk{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.72);color:#fff;font-weight:800;font-size:13px;border-radius:8px;padding:2px 8px}
+.wc .ch{position:absolute;right:8px;top:8px;font-size:11px;font-weight:700;border-radius:8px;padding:2px 6px;background:rgba(255,255,255,.92);color:#191f28}
+.wc .bd{padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.wc .t{font-weight:700;font-size:13.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:36px}
+.wc .g{font-size:11px;color:var(--muted)}
+.wc .m{display:grid;grid-template-columns:1fr auto;gap:1px 8px;font-size:12px}.wc .m span:nth-child(odd){color:var(--muted)}.wc .m b{text-align:right}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:8px;background:var(--chip);margin-right:4px}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 8px;border-top:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:12px;font-weight:600;color:var(--muted);background:var(--hover);border-top:0;cursor:pointer;user-select:none}
+th.on{color:var(--accent)}th.on[data-dir=desc]::after{content:" ▼";font-size:10px}th.on[data-dir=asc]::after{content:" ▲";font-size:10px}
+td.n,th.n{text-align:right}tbody tr:hover{background:var(--hover)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:14px}
+.ch-box{position:relative;height:280px}.ch-box.tall{height:340px}
+.fin-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 14px;margin-bottom:12px}
+.fin-in label{font-size:12px;color:var(--sub);display:flex;flex-direction:column;gap:3px}
+input[type=number]{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);min-height:36px;width:100%}
+.ct input{max-width:110px;text-align:right}td.d{color:var(--muted);font-size:12px;white-space:normal;min-width:180px}
+.note{background:var(--chip);border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px}
+.bad{background:rgba(214,69,61,.08);border:1px solid rgba(214,69,61,.25)}
+ul.def{margin:0;padding-left:18px}ul.def li{margin:4px 0}
+footer{max-width:1240px;margin:0 auto;padding:0 32px 40px;color:var(--muted);font-size:12px}
+@media (max-width:720px){.top{padding:8px 12px;gap:10px;flex-wrap:wrap}.top-right{display:none}main{padding:12px 12px 32px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}footer{padding:0 12px 32px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">키다리 트래커</div>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="top-right"><span id="stamp"></span><button id="theme" class="icon-btn" aria-label="다크 모드 전환" title="다크 모드 전환">◐</button></div>
+</header>
+<main id="main"></main>
+<footer id="foot"></footer>
+<script>
+const D=/*__DATA__*/null;
+const $=s=>document.querySelector(s);
+const nf=(v,d=0)=>v==null||!isFinite(v)?'—':Number(v).toLocaleString('ko-KR',{maximumFractionDigits:d,minimumFractionDigits:d});
+const sg=(v,d=0)=>v==null||!isFinite(v)?'—':(v>0?'+':'')+nf(v,d);
+const cls=v=>v==null?'':v>0?'up':v<0?'down':'';
+const pct=(v,d=1)=>v==null||!isFinite(v)?'—':(v>0?'+':'')+nf(v,d)+'%';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const PAL=()=>['--c1','--c2','--c3','--c4','--c5','--c6'].map(css);
+const charts={};
+function chart(id,cfg){if(charts[id])charts[id].destroy();const el=document.getElementById(id);if(!el)return;
+  cfg.options=Object.assign({responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:css('--sub'),boxWidth:12}}}},cfg.options||{});
+  const sc=cfg.options.scales||{};Object.values(sc).forEach(a=>{a.ticks=Object.assign({color:css('--muted')},a.ticks||{});a.grid=Object.assign({color:css('--grid')},a.grid||{})});
+  charts[id]=new Chart(el,cfg)}
+
+const PAGES=[['sum','요약'],['teaz','AI챗 티즈'],['kr','웹툰 KR'],['us','웹툰 US'],['jp','웹툰 JP'],['snack','숏드라마'],['apps','앱·국가'],['price','주가'],['fin','재무 12Q'],['mix','기여도 분해'],['calc','계산기'],['topco','탑코 비교'],['def','정의']];
+const pages={};
+function nav(){const t=$('#tabs');t.innerHTML=PAGES.map(([k,l])=>`<button class="tab" data-p="${k}">${l}</button>`).join('');
+  t.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{location.hash=b.dataset.p});
+  const m=$('#main');m.innerHTML=PAGES.map(([k])=>`<section class="page" id="p-${k}"></section>`).join('')}
+function show(){const k=(location.hash||'#sum').slice(1);const key=PAGES.some(p=>p[0]==k)?k:'sum';
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.p==key));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('on',p.id=='p-'+key));
+  if(!pages[key]){pages[key]=1;RENDER[key]()} window.scrollTo(0,0)}
+
+/* ---------- 정렬 가능한 표 ---------- */
+function table(el,cols,rows,init){let st=Object.assign({k:null,dir:'desc'},init||{});
+  function draw(){let r=rows.slice();if(st.k){const c=cols.find(c=>c.k==st.k);r.sort((a,b)=>{let x=a[st.k],y=b[st.k];if(x==null)return 1;if(y==null)return -1;if(typeof x=='string')return st.dir=='asc'?x.localeCompare(y):y.localeCompare(x);return st.dir=='asc'?x-y:y-x})}
+    el.innerHTML=`<div class="tw"><table><thead><tr>${cols.map(c=>`<th class="${c.n?'n':''} ${st.k==c.k?'on':''}" data-k="${c.k}" data-dir="${st.dir}">${c.l}</th>`).join('')}</tr></thead><tbody>${r.map(x=>`<tr>${cols.map(c=>`<td class="${c.n?'n':''} ${c.cl?c.cl(x[c.k]):''}">${c.f?c.f(x[c.k],x):esc(x[c.k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    el.querySelectorAll('th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(st.k==k)st.dir=st.dir=='desc'?'asc':'desc';else{st.k=k;st.dir='desc'}draw()})}
+  draw()}
+
+/* ---------- 카드 그리드 + 정렬 토글 ---------- */
+function cardView(host,opt){const st={k:opt.sorts[0][0],dir:opt.sorts[0][2]||'desc',view:'card',q:''};
+  host.innerHTML=`<div class="bar"><span class="lbl">정렬</span><div class="seg" data-r="sort">${opt.sorts.map(([k,l])=>`<button data-k="${k}">${l}</button>`).join('')}</div>
+   <button class="dir" data-r="dir"></button><div class="seg" data-r="view"><button data-v="card">카드</button><button data-v="table">표</button></div>
+   ${opt.filters?`<div class="seg" data-r="flt">${opt.filters.map(f=>`<button data-f="${esc(f)}">${esc(f)}</button>`).join('')}</div>`:''}
+   <span class="muted" data-r="cnt" style="margin-left:auto"></span></div><div data-r="body"></div>`;
+  const q=s=>host.querySelector(`[data-r="${s}"]`);let flt=null;
+  function draw(){let r=opt.rows.filter(x=>!flt||x.genre==flt||String(x.genre||'').includes(flt));
+    r.sort((a,b)=>{let x=a[st.k],y=b[st.k];if(x==null)return 1;if(y==null)return -1;return st.dir=='asc'?x-y:y-x});
+    q('sort').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.k==st.k));
+    q('view').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v==st.view));
+    if(q('flt'))q('flt').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.f==flt));
+    q('dir').textContent=st.dir=='desc'?'내림차순 ▼':'오름차순 ▲';q('cnt').textContent=r.length+'개';
+    const body=q('body');
+    if(st.view=='card')body.innerHTML=`<div class="grid">${r.map(opt.card).join('')}</div>`;
+    else table(body,opt.cols,r,{k:st.k,dir:st.dir})}
+  q('sort').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(st.k==b.dataset.k)st.dir=st.dir=='desc'?'asc':'desc';else{st.k=b.dataset.k;st.dir=(opt.sorts.find(s=>s[0]==st.k)[2])||'desc'}draw()});
+  q('dir').onclick=()=>{st.dir=st.dir=='desc'?'asc':'desc';draw()};
+  q('view').querySelectorAll('button').forEach(b=>b.onclick=()=>{st.view=b.dataset.v;draw()});
+  if(q('flt'))q('flt').querySelectorAll('button').forEach(b=>b.onclick=()=>{flt=flt==b.dataset.f?null:b.dataset.f;draw()});
+  draw()}
+const img=(src,alt)=>src?`<img src="${esc(src)}" alt="${esc(alt)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`:'';
+const rkCh=v=>v==null?'':v>0?`<span class="ch" style="color:var(--up)">▲${v}</span>`:v<0?`<span class="ch" style="color:var(--down)">▼${-v}</span>`:`<span class="ch">–</span>`;
+
+/* ---------- 페이지 ---------- */
+const RENDER={};
+const tz=D.teaz;
+const annRev=(daily,won)=>daily*365*won/1e8;
+RENDER.sum=()=>{const L=D.lezhin;const p=D.price;const n=p.c.length;const chg=(p.c[n-1]/p.c[n-2]-1)*100;
+ $('#p-sum').innerHTML=`<div class="page-head"><h1>키다리스튜디오 대체데이터</h1><p>공개 웹·앱 데이터를 매일 08:40에 스냅샷해 매출군별로 잇습니다. 카드를 누르면 해당 탭으로 이동</p></div>
+ <div class="kpis">
+  <button class="kpi" data-go="price"><div class="l">주가 (${p.d[n-1].slice(4,6)}/${p.d[n-1].slice(6)})</div><div class="v">${nf(p.c[n-1])}원</div><div class="s ${cls(chg)}">${pct(chg)} · 시총 ${nf(p.c[n-1]*37071266/1e8)}억</div></button>
+  <button class="kpi" data-go="teaz"><div class="l">티즈 누적 메시지</div><div class="v">${nf(tz.cum)}</div><div class="s">캐릭터 ${tz.chars.length}명 · 출시 ${tz.days}일</div></button>
+  <button class="kpi" data-go="teaz"><div class="l">티즈 하루 메시지</div><div class="v">${nf(tz.basis)}</div><div class="s">${tz.basis_label}</div></button>
+  <button class="kpi" data-go="calc"><div class="l">티즈 연환산 매출(상한)</div><div class="v">${nf(annRev(tz.basis,40),1)}~${nf(annRev(tz.basis,50),1)}억</div><div class="s">턴당 40~50원</div></button>
+  <button class="kpi" data-go="kr"><div class="l">레진 KR Top100 조회 증분</div><div class="v">${sg(L.kr.dv)}</div><div class="s">24h 환산 · 2회차 수집부터</div></button>
+  <button class="kpi" data-go="us"><div class="l">레진 US Top100 조회 증분</div><div class="v">${sg(L.us.dv)}</div><div class="s">24h 환산 · 2회차 수집부터</div></button>
+  <button class="kpi" data-go="fin"><div class="l">3Q26 매출 / 영업이익</div><div class="v">595억 / 43억</div><div class="s">YoY +12.8% / +21.1%</div></button>
+  <button class="kpi" data-go="topco"><div class="l">탑툰챗 하루 세션(11월)</div><div class="v">${nf(avgM(D.topco,'ALL',D.topco.dates[D.topco.dates.length-1].slice(0,7)))}</div><div class="s">9월 대비 ${pct((avgM(D.topco,'ALL',D.topco.dates[D.topco.dates.length-1].slice(0,7))/avgM(D.topco,'ALL','2026-09')-1)*100)}</div></button>
+ </div>
+ <div class="card note bad"><b>티즈 현재 속도로는</b> 연 ${nf(annRev(tz.basis,50),1)}억(상한) → 2027E Bear 30억에 ${nf(30/annRev(tz.basis,50),0)}배, 회사 Base 165억에 ${nf(165/annRev(tz.basis,50),0)}배 모자람. 성장 경로는 계산기 탭에서 탑코 케이스로 확인</div>
+ <div class="card"><h2>매출군 → 트래킹 지표</h2>
+ <div id="sum-map"></div></div>`;
+ table($('#sum-map'),[{k:'line',l:'매출군'},{k:'country',l:'국가'},{k:'src',l:'트래킹 지표'},{k:'freq',l:'데이터'},{k:'tab',l:'탭'}],[
+  {line:'AI챗(티즈)',country:'KR',src:'캐릭터별 누적 메시지·좋아요',freq:'일일 수치',tab:'AI챗 티즈'},
+  {line:'웹툰 국내',country:'KR',src:'레진 실시간 Top100 조회·구독·순위',freq:'일일 수치',tab:'웹툰 KR'},
+  {line:'웹툰 해외',country:'US',src:'레진 US Top100 조회·구독·순위',freq:'일일 수치',tab:'웹툰 US'},
+  {line:'웹툰 해외',country:'JP',src:'레진 JP 일간 랭킹 Top100',freq:'순위만',tab:'웹툰 JP'},
+  {line:'웹툰 해외',country:'TH·TW·JP·FR·DE',src:'봄툰TW·레진TH·벨툰JP·델리툰 앱 설치수·평점',freq:'일일 수치',tab:'앱·국가'},
+  {line:'영상(숏드라마)',country:'KR·글로벌',src:'레진스낵 랭킹 30위·앱 설치수',freq:'순위·설치',tab:'숏드라마'},
+  {line:'웹툰 국내(봄툰)',country:'KR',src:'앱 설치수만 (사이트 API는 robots 금지)',freq:'설치',tab:'앱·국가'},
+  {line:'웹소설',country:'KR',src:'공개 경로 없음 (레진 0건, 봄툰 API 금지)',freq:'불가',tab:'—'},
+  {line:'MD',country:'KR',src:'공개 경로 없음 (스마트스토어 robots 금지) → 분기 공시',freq:'불가',tab:'재무 12Q'}]);
+ document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash=b.dataset.go)};
+
+RENDER.teaz=()=>{const h=$('#p-teaz');
+ h.innerHTML=`<div class="page-head"><h1>AI챗 티즈 (myteaz.io)</h1><p>캐릭터별 누적 메시지(message_count). 수집 시작 ${D.first.slice(0,10)} · 출시 ${tz.days}일차</p></div>
+ <div class="two"><div class="card"><h2>출시 후 누적 메시지 (재구성 + 실측)</h2><p class="cap">점선 = 캐릭터별 공개일부터 일정 속도 가정한 재구성(추정), 점 = 실측 스냅샷</p><div class="ch-box"><canvas id="tz1"></canvas></div></div>
+ <div class="card"><h2>장르별 누적 메시지</h2><p class="cap">로맨스·BL이 86%</p><div class="ch-box"><canvas id="tz2"></canvas></div></div></div>
+ <div id="tzc"></div>`;
+ const pal=PAL();
+ chart('tz1',{type:'line',data:{labels:tz.recon.map(x=>x[0].slice(5)),datasets:[{label:'재구성(추정)',data:tz.recon.map(x=>x[1]),borderColor:pal[0],borderDash:[5,4],pointRadius:0,tension:.2},
+   {label:'실측',data:tz.recon.map(x=>{const s=tz.series.filter(y=>y[0].slice(0,10)==x[0]);return s.length?s[s.length-1][1]:null}),borderColor:pal[4],backgroundColor:pal[4],showLine:false,pointRadius:5}]},
+   options:{scales:{x:{},y:{ticks:{callback:v=>nf(v)}}}}});
+ const g={};tz.chars.forEach(c=>g[c.genre]=(g[c.genre]||0)+c.msgs);const gk=Object.keys(g).sort((a,b)=>g[b]-g[a]);
+ chart('tz2',{type:'doughnut',data:{labels:gk,datasets:[{data:gk.map(k=>g[k]),backgroundColor:pal}]},options:{interaction:{mode:'nearest'},plugins:{legend:{position:'right',labels:{color:css('--sub')}}}}});
+ cardView($('#tzc'),{rows:tz.chars,filters:gk,
+  sorts:[['msgs','누적'],['avg','공개 후 일평균'],['d1','24h 증분'],['d7','7일 증분'],['likes','좋아요'],['lz_rank','원작 레진 순위','asc']],
+  card:c=>`<a class="wc" ${c.url?`href="${esc(c.url)}" target="_blank" rel="noopener"`:''}><div class="im">${img(c.img,c.name)}<span class="rk">${esc(c.name)}</span></div>
+   <div class="bd"><div class="g"><span class="chip">${esc(c.genre)}</span>${c.lz_rank?`<span class="chip">레진 ${c.lz_rank}위</span>`:''}</div><div class="t">${esc(c.work||c.tagline)}</div>
+   <div class="m"><span>누적</span><b>${nf(c.msgs)}</b><span>공개 후 일평균</span><b>${nf(c.avg)}</b><span>24h</span><b class="${cls(c.d1)}">${sg(c.d1)}</b><span>7일</span><b>${sg(c.d7)}</b><span>좋아요</span><b>${nf(c.likes)}</b><span>공개</span><b>${c.pub.slice(5)}</b></div></div></a>`,
+  cols:[{k:'name',l:'캐릭터'},{k:'genre',l:'장르'},{k:'work',l:'원작'},{k:'pub',l:'공개'},{k:'msgs',l:'누적',n:1,f:v=>nf(v)},{k:'avg',l:'일평균',n:1,f:v=>nf(v)},{k:'d1',l:'24h',n:1,f:v=>sg(v),cl:cls},{k:'d7',l:'7일',n:1,f:v=>sg(v)},{k:'likes',l:'좋아요',n:1,f:v=>nf(v)},{k:'lz_rank',l:'레진 순위',n:1,f:v=>v?v+'위':'—'}]})};
+
+function lzPage(key,label,note){const L=D.lezhin[key];const h=$('#p-'+key);
+ const gs=[...new Set(L.items.map(x=>(x.genre||'').split(',')[0]).filter(Boolean))].slice(0,8);
+ h.innerHTML=`<div class="page-head"><h1>웹툰 ${label} · 레진 실시간 Top${L.items.length}</h1><p>${note}</p></div>
+ <div class="kpis"><div class="kpi"><div class="l">Top100 누적 조회</div><div class="v">${nf(L.series[L.series.length-1][1])}</div><div class="s">스냅샷 ${L.series.length}회</div></div>
+ <div class="kpi"><div class="l">조회 증분(24h)</div><div class="v">${sg(L.dv)}</div><div class="s">공통 작품 기준</div></div>
+ <div class="kpi"><div class="l">구독 증분(24h)</div><div class="v">${sg(L.ds)}</div><div class="s">공통 작품 기준</div></div></div>
+ <div class="card"><h2>Top100 누적 조회 추이</h2><div class="ch-box"><canvas id="c-${key}"></canvas></div></div><div id="g-${key}"></div>`;
+ chart('c-'+key,{type:'line',data:{labels:L.series.map(x=>x[0].slice(5,16).replace('T',' ')),datasets:[{label:'Top100 누적 조회',data:L.series.map(x=>x[1]),borderColor:PAL()[0],tension:.2}]},options:{scales:{x:{},y:{ticks:{callback:v=>nf(v)}}}}});
+ cardView($('#g-'+key),{rows:L.items,filters:gs,
+  sorts:[['rank','순위','asc'],['views','누적 조회'],['dv','조회 증분'],['subs','구독'],['ds','구독 증분'],['drank','순위 상승']],
+  card:x=>`<a class="wc" ${x.url?`href="${esc(x.url)}" target="_blank" rel="noopener"`:''}><div class="im">${img(x.img,x.title)}<span class="rk">${x.rank}</span>${rkCh(x.drank)}</div>
+   <div class="bd"><div class="t">${esc(x.title)}</div><div class="g">${esc(x.genre)}</div>
+   <div class="m"><span>누적 조회</span><b>${nf(x.views)}</b><span>24h 조회</span><b class="${cls(x.dv)}">${sg(x.dv)}</b><span>구독</span><b>${nf(x.subs)}</b><span>24h 구독</span><b class="${cls(x.ds)}">${sg(x.ds)}</b></div></div></a>`,
+  cols:[{k:'rank',l:'순위',n:1},{k:'title',l:'작품'},{k:'genre',l:'장르'},{k:'views',l:'누적 조회',n:1,f:v=>nf(v)},{k:'dv',l:'24h 조회',n:1,f:v=>sg(v),cl:cls},{k:'subs',l:'구독',n:1,f:v=>nf(v)},{k:'ds',l:'24h 구독',n:1,f:v=>sg(v),cl:cls},{k:'drank',l:'순위 변동',n:1,f:v=>sg(v),cl:cls}]})}
+RENDER.kr=()=>lzPage('kr','KR','국내 웹툰 매출(2025 웹툰 국내 1,204억)의 방향성 지표. 조회는 무료 회차 포함');
+RENDER.us=()=>lzPage('us','US','해외 웹툰 매출 중 미국(2025 242억, 웹툰의 17%). 레진 US LLC 1~3Q26 매출 276억');
+
+function rankPage(key,data,title,note){const h=$('#p-'+key);
+ h.innerHTML=`<div class="page-head"><h1>${title}</h1><p>${note}</p></div><div id="g-${key}"></div>`;
+ if(!data.items.length){h.innerHTML+=`<div class="card">데이터 없음</div>`;return}
+ const gs=[...new Set(data.items.map(x=>(x.genre||'').split(',')[0]).filter(Boolean))].slice(0,8);
+ cardView($('#g-'+key),{rows:data.items,filters:gs,sorts:[['rank','순위','asc'],['drank','순위 상승']],
+  card:x=>`<a class="wc" ${x.url?`href="${esc(x.url)}" target="_blank" rel="noopener"`:''}><div class="im">${img(x.img,x.title)}<span class="rk">${x.rank}</span>${x.change?`<span class="ch">${x.change=='up'?'▲':x.change=='down'?'▼':'–'}</span>`:rkCh(x.drank)}</div><div class="bd"><div class="t">${esc(x.title)}</div><div class="g">${esc(x.genre)}</div></div></a>`,
+  cols:[{k:'rank',l:'순위',n:1},{k:'title',l:'작품'},{k:'genre',l:'장르'},{k:'change',l:'전일 대비'},{k:'drank',l:'순위 변동',n:1,f:v=>sg(v),cl:cls}]})}
+RENDER.jp=()=>rankPage('jp',D.lezhin.jp,'웹툰 JP · 레진 JP 일간 랭킹','레진 재팬(2025 웹툰 일본 104억). 공개 API는 순위·순위 변동만 제공(조회수 없음). 벨툰JP는 앱·국가 탭');
+RENDER.snack=()=>rankPage('snack',D.snack,'영상 · 레진스낵 숏드라마 랭킹','영상 부문(3Q26 매출 12억, 영업손실 19억). 공개 데이터는 순위 30위와 앱 설치수(앱·국가 탭)');
+
+RENDER.apps=()=>{const h=$('#p-apps');
+ h.innerHTML=`<div class="page-head"><h1>앱 · 국가별</h1><p>구글플레이 정확 설치수(국가별 스토어)와 앱스토어 평점 수. 플랫폼 이용자 저변의 선행지표</p></div>
+ <div class="two"><div class="card"><h2>구글플레이 설치수</h2><div class="ch-box"><canvas id="ap1"></canvas></div></div><div class="card"><h2>앱스토어 평점 수</h2><div class="ch-box"><canvas id="ap2"></canvas></div></div></div>
+ <div class="card"><h2>구글플레이</h2><div id="ap3"></div></div><div class="card"><h2>앱스토어</h2><div id="ap4"></div></div>`;
+ const a=D.apps.slice().sort((x,y)=>y.installs-x.installs);
+ chart('ap1',{type:'bar',data:{labels:a.map(x=>x.name),datasets:[{label:'설치수',data:a.map(x=>x.installs),backgroundColor:PAL()[0]}]},options:{indexAxis:'y',scales:{x:{ticks:{callback:v=>nf(v/1e4)+'만'}},y:{}}}});
+ const s=D.appstore.slice().sort((x,y)=>y.rc-x.rc);
+ chart('ap2',{type:'bar',data:{labels:s.map(x=>x.country.toUpperCase()+' · '+x.name.slice(0,14)),datasets:[{label:'평점 수',data:s.map(x=>x.rc),backgroundColor:PAL()[2]}]},options:{indexAxis:'y',scales:{x:{},y:{}}}});
+ table($('#ap3'),[{k:'name',l:'앱'},{k:'country',l:'국가'},{k:'installs',l:'설치수',n:1,f:v=>nf(v)},{k:'d',l:'24h 증분',n:1,f:v=>sg(v),cl:cls},{k:'rc',l:'평점 수',n:1,f:v=>nf(v)},{k:'rating',l:'평점',n:1,f:v=>nf(v,2)}],a,{k:'installs'});
+ table($('#ap4'),[{k:'country',l:'국가'},{k:'name',l:'앱'},{k:'rc',l:'평점 수',n:1,f:v=>nf(v)},{k:'rating',l:'평점',n:1,f:v=>nf(v,2)}],s,{k:'rc'})};
+
+RENDER.price=()=>{const p=D.price,h=$('#p-price');const n=p.c.length;
+ h.innerHTML=`<div class="page-head"><h1>주가 · 020120 (KOSPI)</h1><p>실시간 위젯(TradingView, 지연 가능) + 일봉 3년(네이버, 매일 갱신)</p></div>
+ <div class="card"><h2>실시간</h2><div class="tradingview-widget-container" style="height:360px"><div class="tradingview-widget-container__widget"></div></div><p class="cap" id="tvnote">위젯이 안 보이면 아래 일봉 차트를 사용</p></div>
+ <div class="card"><div class="bar" style="box-shadow:none;border:0;padding:0;margin-bottom:8px"><div class="seg" id="rng">${[['1M',22],['3M',66],['6M',130],['1Y',250],['3Y',9999]].map(([l,v])=>`<button data-v="${v}">${l}</button>`).join('')}</div><span class="muted" id="rngst" style="margin-left:auto"></span></div>
+ <div class="ch-box tall"><canvas id="px1"></canvas></div><div class="ch-box" style="height:120px"><canvas id="px2"></canvas></div></div>`;
+ const s=document.createElement('script');s.src='https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';s.async=true;
+ s.innerHTML=JSON.stringify({symbols:[['키다리스튜디오','KRX:020120|1D']],chartOnly:false,width:'100%',height:340,locale:'kr',colorTheme:document.documentElement.dataset.theme=='dark'||matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light',autosize:true,showVolume:true,chartType:'area',dateRanges:['1d|1','1m|30','3m|60','12m|1D','60m|1W','all|1M']});
+ h.querySelector('.tradingview-widget-container').appendChild(s);
+ function draw(k){const i0=Math.max(0,n-k);const d=p.d.slice(i0),c=p.c.slice(i0),v=p.vol.slice(i0).map((x,i)=>x*c[i]/1e8);
+  $('#rngst').innerHTML=`${d[0].slice(2,4)}.${d[0].slice(4,6)}.${d[0].slice(6)} → ${nf(c[c.length-1])}원 <b class="${cls(c[c.length-1]-c[0])}">${pct((c[c.length-1]/c[0]-1)*100)}</b> · 고 ${nf(Math.max(...c))} / 저 ${nf(Math.min(...c))}`;
+  const lab=d.map(x=>`${x.slice(2,4)}.${x.slice(4,6)}.${x.slice(6)}`);
+  chart('px1',{type:'line',data:{labels:lab,datasets:[{label:'종가',data:c,borderColor:PAL()[0],pointRadius:0,borderWidth:1.6,fill:{target:'origin'},backgroundColor:'rgba(49,130,246,.08)'}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:8}},y:{ticks:{callback:v=>nf(v)}}}}});
+  chart('px2',{type:'bar',data:{labels:lab,datasets:[{label:'거래대금(억)',data:v,backgroundColor:PAL()[5]}]},options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{ticks:{maxTicksLimit:3}}}}});
+  h.querySelectorAll('#rng button').forEach(b=>b.classList.toggle('on',+b.dataset.v==k))}
+ h.querySelectorAll('#rng button').forEach(b=>b.onclick=()=>draw(+b.dataset.v));draw(250)};
+
+const F=D.fin;
+RENDER.fin=()=>{const fs=F.fs,Q=fs.Q,I=fs.IS,h=$('#p-fin');
+ h.innerHTML=`<div class="page-head"><h1>재무 12개 분기 (4Q23~3Q26)</h1><p>DART 연결 · 4Q = 연간 − 3Q 누적 · 단위 억원</p></div>
+ <div class="two"><div class="card"><h2>매출과 이익</h2><div class="ch-box"><canvas id="f1"></canvas></div></div><div class="card"><h2>이익률</h2><div class="ch-box"><canvas id="f2"></canvas></div></div></div>
+ <div class="two"><div class="card"><h2>현금흐름</h2><div class="ch-box"><canvas id="f3"></canvas></div></div><div class="card"><h2>순현금·자본</h2><div class="ch-box"><canvas id="f4"></canvas></div></div></div>
+ <div class="card"><h2>손익 12분기 (헤더를 누르면 정렬)</h2><div id="f5"></div></div>`;
+ const P=PAL();
+ chart('f1',{data:{labels:Q,datasets:[{type:'bar',label:'매출',data:I['매출액'],backgroundColor:P[0]+'99',yAxisID:'y'},{type:'line',label:'영업이익',data:I['영업이익'],borderColor:P[1],yAxisID:'y1'},{type:'line',label:'지배순이익',data:I['지배주주순이익'].map(v=>Math.max(v,-80)),borderColor:P[4],yAxisID:'y1'}]},options:{scales:{x:{},y:{position:'left'},y1:{position:'right',grid:{drawOnChartArea:false}}}}});
+ const m=(a,b)=>a.map((v,i)=>v/b[i]*100);
+ chart('f2',{type:'line',data:{labels:Q,datasets:[{label:'매출총이익률',data:m(I['매출총이익'],I['매출액']),borderColor:P[2]},{label:'영업이익률',data:m(I['영업이익'],I['매출액']),borderColor:P[1]},{label:'판관비율',data:m(I['판매비와관리비'],I['매출액']),borderColor:P[5]}]},options:{scales:{x:{},y:{ticks:{callback:v=>v+'%'}}}}});
+ const C=fs.CF;const capex=C['유형자산 취득'].map((v,i)=>(v||0)+(C['무형자산 취득'][i]||0));
+ chart('f3',{type:'bar',data:{labels:Q,datasets:[{label:'영업CF',data:C['영업활동현금흐름'],backgroundColor:P[0]},{label:'FCF',data:C['영업활동현금흐름'].map((v,i)=>v-capex[i]),backgroundColor:P[2]}]},options:{scales:{x:{},y:{}}}});
+ const B=fs.BS;
+ chart('f4',{data:{labels:Q,datasets:[{type:'bar',label:'순현금(현금−차입)',data:B['현금및현금성자산'].map((v,i)=>v-B['단기차입금'][i]),backgroundColor:P[2],yAxisID:'y'},{type:'line',label:'지배주주지분',data:B['지배주주지분'],borderColor:P[3],yAxisID:'y1'}]},options:{scales:{x:{},y:{},y1:{position:'right',grid:{drawOnChartArea:false}}}}});
+ const rows=Q.map((q,i)=>({q,i,rev:I['매출액'][i],op:I['영업이익'][i],ni:I['지배주주순이익'][i],opm:I['영업이익'][i]/I['매출액'][i]*100,yoy:i>=4?(I['매출액'][i]/I['매출액'][i-4]-1)*100:null,qoq:i>=1?(I['매출액'][i]/I['매출액'][i-1]-1)*100:null,opyoy:i>=4&&I['영업이익'][i-4]>0?(I['영업이익'][i]/I['영업이익'][i-4]-1)*100:null,ocf:C['영업활동현금흐름'][i]}));
+ table($('#f5'),[{k:'q',l:'분기'},{k:'rev',l:'매출',n:1,f:v=>nf(v,1)},{k:'yoy',l:'매출 YoY',n:1,f:v=>pct(v),cl:cls},{k:'qoq',l:'매출 QoQ',n:1,f:v=>pct(v),cl:cls},{k:'op',l:'영업이익',n:1,f:v=>nf(v,1)},{k:'opyoy',l:'영업이익 YoY',n:1,f:v=>pct(v),cl:cls},{k:'opm',l:'OPM',n:1,f:v=>nf(v,1)+'%'},{k:'ni',l:'지배순이익',n:1,f:v=>nf(v,1),cl:cls},{k:'ocf',l:'영업CF',n:1,f:v=>nf(v,1)}],rows,{k:'i',dir:'asc'})};
+
+RENDER.mix=()=>{const S=F.seg,h=$('#p-mix');const segs=Object.keys(S.rev);const P=PAL();
+ h.innerHTML=`<div class="page-head"><h1>기여도 분해</h1><p>매출·영업이익을 부문으로 쪼개 비중(%)과 성장 기여(%p)로 봄. ${esc(S.op_note)}</p></div>
+ <div class="two"><div class="card"><h2>부문별 매출 비중</h2><div class="ch-box"><canvas id="m1"></canvas></div></div><div class="card"><h2>매출 YoY 성장 기여(%p)</h2><p class="cap">부문 증가분 ÷ 전년 동기 총매출</p><div class="ch-box"><canvas id="m2"></canvas></div></div></div>
+ <div class="two"><div class="card"><h2>부문별 영업이익 (분기)</h2><div class="ch-box"><canvas id="m3"></canvas></div></div><div class="card"><h2>연간 영업이익 기여 (%)</h2><p class="cap">부문 영업이익 ÷ 전사 영업이익</p><div class="ch-box"><canvas id="m4"></canvas></div></div></div>
+ <div class="two"><div class="card"><h2>비용 구성 (매출 대비 %)</h2><div class="ch-box"><canvas id="m5"></canvas></div></div><div class="card"><h2>분해 표</h2><div class="seg" id="mt" style="margin-bottom:8px"><button data-v="rs">매출 비중</button><button data-v="gc">성장 기여</button><button data-v="os">이익 기여</button></div><div id="m6"></div></div></div>`;
+ const tot=S.Q.map((_,i)=>segs.reduce((a,k)=>a+S.rev[k][i],0)), otot=S.Q.map((_,i)=>segs.reduce((a,k)=>a+S.op[k][i],0));
+ chart('m1',{type:'bar',data:{labels:S.Q,datasets:segs.map((k,j)=>({label:k,data:S.rev[k].map((v,i)=>v/tot[i]*100),backgroundColor:P[j]}))},options:{scales:{x:{stacked:true},y:{stacked:true,max:100,ticks:{callback:v=>v+'%'}}}}});
+ const yq=S.Q.slice(4);const gc=k=>S.Q.slice(4).map((_,j)=>{const i=j+4;return (S.rev[k][i]-S.rev[k][i-4])/tot[i-4]*100});
+ chart('m2',{type:'bar',data:{labels:yq,datasets:segs.map((k,j)=>({label:k,data:gc(k),backgroundColor:P[j]}))},options:{scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v+'%p'}}}}});
+ chart('m3',{type:'bar',data:{labels:S.Q,datasets:segs.map((k,j)=>({label:k,data:S.op[k],backgroundColor:P[j]}))},options:{scales:{x:{stacked:true},y:{stacked:true}}}});
+ const A=S.annual;const ak=Object.keys(A.op);const at=A.Y.map((_,i)=>ak.reduce((a,k)=>a+A.op[k][i],0));
+ chart('m4',{type:'bar',data:{labels:A.Y,datasets:ak.map((k,j)=>({label:k,data:A.op[k].map((v,i)=>v/at[i]*100),backgroundColor:P[j]}))},options:{scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v+'%'}}}}});
+ const Cc=S.cost;const ck=Object.keys(Cc.items);
+ chart('m5',{type:'bar',data:{labels:Cc.cols,datasets:ck.map((k,j)=>({label:k,data:Cc.items[k].map((v,i)=>v/Cc.rev[i]*100),backgroundColor:P[j%6]}))},options:{scales:{x:{stacked:true},y:{stacked:true,ticks:{callback:v=>v+'%'}}}}});
+ const views={rs:()=>segs.map(k=>Object.fromEntries([['부문',k],...S.Q.map((q,i)=>[q,S.rev[k][i]/tot[i]*100])])),
+  gc:()=>segs.map(k=>Object.fromEntries([['부문',k],...yq.map((q,j)=>[q,gc(k)[j]])])).concat([Object.fromEntries([['부문','합계(매출 YoY)'],...yq.map((q,j)=>[q,(tot[j+4]/tot[j]-1)*100])])]),
+  os:()=>segs.map(k=>Object.fromEntries([['부문',k],...S.Q.map((q,i)=>[q,otot[i]>0?S.op[k][i]/otot[i]*100:null])]))};
+ const vq={rs:S.Q,gc:yq,os:S.Q};
+ function dv(v){h.querySelectorAll('#mt button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));table($('#m6'),[{k:'부문',l:'부문'}].concat(vq[v].map(q=>({k:q,l:q,n:1,f:x=>v=='gc'?pct(x):nf(x,1)+'%',cl:v=='gc'?cls:null}))),views[v]())}
+ h.querySelectorAll('#mt button').forEach(b=>b.onclick=()=>dv(b.dataset.v));dv('rs')};
+
+function avgM(T,r,m){const v=T.dates.map((d,i)=>[d,T.regions[r].dS[i]]).filter(([d,x])=>d.startsWith(m)&&x!=null).map(x=>x[1]);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
+
+RENDER.calc=()=>{const h=$('#p-calc');
+ const DEF={daily:Math.round(tz.basis),core_rev:2636,core_op:218,kr_webtoon:1204,shares:35646926,per:12,tax:30,price:D.price.c[D.price.c.length-1],
+  cases:{Bear:{mult:2,won:50,paid:30,recog:44,opm:-20,pen:3},Base:{mult:8.2,won:50,paid:60,recog:44,opm:18,pen:8},Bull:{mult:20,won:50,paid:100,recog:44,opm:25,pen:22}}};
+ let S;try{S=JSON.parse(localStorage.getItem('kd_calc2'))}catch(e){} if(!S||!S.cases)S=JSON.parse(JSON.stringify(DEF));
+ const ROWS=[['mult','A · 하루 메시지 배수(현재 대비)','탑코 1Q26→2Q26 챗 매출 ×8.2'],['won','A · 메시지당 과금(원)','탐방: 턴당 40→50원'],['paid','A · 유료 메시지 비중(%)','무료 턴 제외'],['recog','키다리 인식 비율(%)','작가 RS 후 파트너 50:50 → 100당 43~45'],['opm','티즈 영업이익률(%)','토큰비 파트너 부담. 회사 Base 30/165=18%'],['pen','B · 국내 웹툰 대비 챗 매출(%)','탑코 2Q26 22%']];
+ h.innerHTML=`<div class="page-head"><h1>티즈 기여도 계산기 · 탑코 케이스</h1><p>숫자를 바꾸면 바로 다시 계산. 방법 A = 트래커 실측 하루 메시지에서 출발, 방법 B = 탑툰챗처럼 국내 웹툰 매출의 일정 비율까지 챗이 붙는 경우. 분모는 2027E 본업(티즈 제외)</p></div>
+ <div class="card note"><b>탑코 벤치마크</b> · 챗 매출 1Q26 약 2.5억 → 2Q26 약 20.4억(×8.2, 국내 플랫폼의 22%) · 방문 MAU 3월 22만 → 9월 48만 · 공개 트래커 하루 세션 9월 ${nf(avgM(D.topco,'ALL','2026-09'))} → 11월 ${nf(avgM(D.topco,'ALL','2026-11'))}</div>
+ <div class="card"><h2>공통 입력</h2><div class="fin-in">${[['core_rev','2027E 본업 매출(억)'],['core_op','2027E 본업 영업이익(억)'],['kr_webtoon','국내 웹툰 연매출(억, B)'],['daily','티즈 현재 하루 메시지'],['per','적용 PER(배)'],['tax','세율(%)'],['shares','유통주식(주)'],['price','현재 주가(원)']].map(([k,l])=>`<label>${l}<input type="number" step="any" data-g="${k}"></label>`).join('')}</div>
+ <div class="tw"><table class="ct"><thead><tr><th>케이스 입력</th><th class="n">Bear</th><th class="n">Base</th><th class="n">Bull</th><th>근거</th></tr></thead><tbody id="cin"></tbody></table></div><button class="dir" id="creset" style="margin-top:8px">기본값으로</button></div>
+ <div class="two"><div class="card"><h2>매출·영업이익 기여도</h2><div class="ch-box"><canvas id="cc1"></canvas></div></div><div class="card"><h2>주당가치 기여(원)</h2><div class="ch-box"><canvas id="cc2"></canvas></div></div></div>
+ <div class="card"><h2>결과 (2027E, 억원)</h2><div class="tw"><table><thead><tr><th>항목</th><th class="n">Bear</th><th class="n">Base</th><th class="n">Bull</th></tr></thead><tbody id="cout"></tbody></table></div><p class="cap" id="cnote" style="margin-top:8px"></p></div>`;
+ const save=()=>{try{localStorage.setItem('kd_calc2',JSON.stringify(S))}catch(e){}};
+ function build(){h.querySelectorAll('[data-g]').forEach(el=>{el.value=S[el.dataset.g];el.oninput=()=>{S[el.dataset.g]=+el.value;save();calc()}});
+  $('#cin').innerHTML=ROWS.map(([k,l,d])=>`<tr><td>${l}</td>${['Bear','Base','Bull'].map(c=>`<td class="n"><input type="number" step="any" data-c="${c}" data-k="${k}" value="${S.cases[c][k]}"></td>`).join('')}<td class="d">${d}</td></tr>`).join('');
+  $('#cin').querySelectorAll('input').forEach(el=>el.oninput=()=>{S.cases[el.dataset.c][el.dataset.k]=+el.value;save();calc()});calc()}
+ function calc(){const R={};['Bear','Base','Bull'].forEach(c=>{const p=S.cases[c],r={};
+  r.mA=S.daily*p.mult;r.revA=r.mA*365*p.won*p.paid/100*p.recog/100/1e8;r.opA=r.revA*p.opm/100;r.rsA=r.revA/(S.core_rev+r.revA)*100;r.osA=r.opA/(S.core_op+r.opA)*100;r.psA=r.opA*(1-S.tax/100)*S.per*1e8/S.shares;
+  r.revB=S.kr_webtoon*p.pen/100*p.recog/100;r.opB=r.revB*p.opm/100;r.rsB=r.revB/(S.core_rev+r.revB)*100;r.osB=r.opB/(S.core_op+r.opB)*100;r.psB=r.opB*(1-S.tax/100)*S.per*1e8/S.shares;
+  r.needB=r.revB*1e8/(365*p.won*p.paid/100*p.recog/100);r.xB=r.needB/S.daily;R[c]=r});
+  const rows=[['A · 2027 하루 메시지','mA',v=>nf(v)],['A · 티즈 매출','revA',v=>nf(v,1)],['A · 티즈 영업이익','opA',v=>nf(v,1)],['A · 매출 기여도','rsA',v=>nf(v,1)+'%'],['A · 영업이익 기여도','osA',v=>nf(v,1)+'%'],['A · 주당가치 기여(원)','psA',v=>nf(v)],
+   ['B · 티즈 매출','revB',v=>nf(v,1)],['B · 티즈 영업이익','opB',v=>nf(v,1)],['B · 매출 기여도','rsB',v=>nf(v,1)+'%'],['B · 영업이익 기여도','osB',v=>nf(v,1)+'%'],['B · 주당가치 기여(원)','psB',v=>nf(v)],['B가 요구하는 하루 메시지','needB',v=>nf(v)],['B 요구치 ÷ 현재','xB',v=>nf(v,1)+'배']];
+  $('#cout').innerHTML=rows.map(([l,k,f])=>`<tr><td>${l}</td>${['Bear','Base','Bull'].map(c=>`<td class="n">${f(R[c][k])}</td>`).join('')}</tr>`).join('');
+  $('#cnote').textContent=`주당가치 기여 = 티즈 영업이익 × (1−세율) × PER ÷ 유통주식. 현재 주가 ${nf(S.price)}원 대비 Base A ${nf(R.Base.psA/S.price*100,1)}%, Base B ${nf(R.Base.psB/S.price*100,1)}%`;
+  const P=PAL(),cs=['Bear','Base','Bull'];
+  chart('cc1',{type:'bar',data:{labels:cs,datasets:[{label:'A 매출 기여',data:cs.map(c=>R[c].rsA),backgroundColor:P[0]+'88'},{label:'A 영익 기여',data:cs.map(c=>R[c].osA),backgroundColor:P[0]},{label:'B 매출 기여',data:cs.map(c=>R[c].rsB),backgroundColor:P[1]+'88'},{label:'B 영익 기여',data:cs.map(c=>R[c].osB),backgroundColor:P[1]}]},options:{scales:{x:{},y:{ticks:{callback:v=>v+'%'}}}}});
+  chart('cc2',{type:'bar',data:{labels:cs,datasets:[{label:'방법 A',data:cs.map(c=>R[c].psA),backgroundColor:P[0]},{label:'방법 B',data:cs.map(c=>R[c].psB),backgroundColor:P[1]}]},options:{scales:{x:{},y:{}}}})}
+ $('#creset').onclick=()=>{S=JSON.parse(JSON.stringify(DEF));save();build()};build()};
+
+RENDER.topco=()=>{const T=D.topco,h=$('#p-topco');const P=PAL();
+ h.innerHTML=`<div class="page-head"><h1>탑코(엔키AX) 탑툰챗 비교</h1><p>탑툰챗 공개 트래커(${esc(T.source)}) 일별 세션 ${T.dates.length}일 + DS투자증권 출시 초기 지표. 세션과 티즈 메시지는 단위가 달라 수준보다 방향을 비교</p></div>
+ <div class="two"><div class="card"><h2>탑툰챗 하루 세션 (국가별)</h2><div class="ch-box"><canvas id="t1"></canvas></div></div><div class="card"><h2>탑툰챗 누적 세션</h2><div class="ch-box"><canvas id="t2"></canvas></div></div></div>
+ <div class="card"><h2>출시 후 경과로 본 비교</h2><div id="t3"></div></div>`;
+ const regs=['KR','JP','TW','GLOBAL'];
+ chart('t1',{type:'line',data:{labels:T.dates.map(d=>d.slice(5)),datasets:regs.map((r,j)=>({label:r,data:T.regions[r].dS,borderColor:P[j],pointRadius:0,tension:.25}))},options:{scales:{x:{ticks:{maxTicksLimit:8}},y:{}}}});
+ chart('t2',{type:'line',data:{labels:T.dates.map(d=>d.slice(5)),datasets:[{label:'ALL 누적',data:T.regions.ALL.cumS,borderColor:P[0],pointRadius:0}]},options:{scales:{x:{ticks:{maxTicksLimit:8}},y:{ticks:{callback:v=>nf(v/1e4)+'만'}}}}});
+ table($('#t3'),[{k:'item',l:'지표'},{k:'topco',l:'탑툰챗 (2026.03 출시)'},{k:'teaz',l:'티즈 (2026.10.19 출시)'}],[
+  {item:'출시 첫 분기 챗 매출',topco:'1Q26 약 2.5억 (3월 1개월)',teaz:`4Q26 추정 상한 ${nf(annRev(tz.basis,50)/4,2)}억 (현재 속도)`},
+  {item:'다음 분기',topco:'2Q26 약 20.4억 (×8.2), 국내 플랫폼의 22%',teaz:'1Q27 지표로 확인'},
+  {item:'이용 규모',topco:'방문 MAU 22만(3월) → 37만(6월) → 48만(9월)',teaz:`하루 메시지 ${nf(tz.basis)} · 캐릭터 ${tz.chars.length}명`},
+  {item:'최근 추세',topco:`하루 세션 9월 ${nf(avgM(T,'ALL','2026-09'))} → 11월 ${nf(avgM(T,'ALL','2026-11'))}`,teaz:'수집 2회차부터 24h 증분'},
+  {item:'해외',topco:'일본·대만 5월, 북미 7월, 해외 세션 비중 약 21%',teaz:'한국어만(일본 1H27 계획)'},
+  {item:'과금',topco:'탑툰 코인 공용, ARPPU 탑툰의 1.9배',teaz:'턴당 40~50원, 토큰비 파트너 부담'}])};
+
+RENDER.def=()=>{$('#p-def').innerHTML=`<div class="page-head"><h1>정의와 한계</h1><p>최근 수집 로그 포함</p></div>
+ <div class="card"><ul class="def">
+ <li><b>티즈 메시지</b> = 캐릭터 message_count 합. AI 응답 포함 여부·무료 턴 비중 미확인 → 매출 환산은 상한</li>
+ <li><b>출시 후 누적 재구성</b>은 캐릭터별 공개일(생성일과 10/19 중 늦은 날)부터 일정 속도를 가정한 추정. 티즈·레진은 누적값만 공개해 일별 과거값은 복원 불가(인터넷 아카이브에도 API 기록 없음)</li>
+ <li><b>레진 조회</b> = 작품 누적 viewCount. Top100 밖 작품은 빠짐. 증분은 두 스냅샷 공통 작품만, 24h 환산</li>
+ <li><b>레진 JP·레진스낵</b>은 순위만 공개. 봄툰·태국·대만·프랑스 웹 API와 스마트스토어(MD)는 robots.txt 금지로 수집하지 않음 → 앱 설치수로 대체</li>
+ <li><b>재무</b>: DART 연결. 부문 영업이익 일부는 DS투자증권 표(십억원 반올림)</li>
+ <li><b>수집</b>: 하루 1회(08:40 KST), 엔드포인트당 1회, 요청 간 1.5초. 투자 권유 아님</li></ul></div>
+ <div class="card"><h2>수집 로그</h2><div id="lg"></div></div>`;
+ table($('#lg'),[{k:'ts',l:'시각'},{k:'src',l:'소스'},{k:'ok',l:'성공',f:v=>v?'✓':'✗'},{k:'note',l:'건수/오류'}],D.runs,{k:'ts'})};
+
+/* ---------- 시작 ---------- */
+$('#stamp').textContent=`최신 스냅샷 ${D.last.replace('T',' ').slice(0,16)} · 생성 ${D.generated}`;
+$('#foot').textContent='공개 웹·앱 지표 기반 추정치이며 투자 권유가 아닙니다. 자료: myteaz.io, lezhin.com, lezhin.jp, lezhinsnack.com, Google Play, App Store, 네이버 증권, DART, DS투자증권, 탑툰챗 공개 트래커';
+try{const t=localStorage.getItem('kd_theme');if(t)document.documentElement.dataset.theme=t}catch(e){}
+$('#theme').onclick=()=>{const dark=document.documentElement.dataset.theme?document.documentElement.dataset.theme=='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+ document.documentElement.dataset.theme=dark?'light':'dark';try{localStorage.setItem('kd_theme',document.documentElement.dataset.theme)}catch(e){}
+ for(const k in pages)delete pages[k];show()};
+nav();addEventListener('hashchange',show);show();
+</script>
+</body>
+</html>
