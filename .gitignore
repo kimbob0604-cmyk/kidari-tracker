@@ -1,0 +1,5 @@
+raw/
+tracker.db
+*.log
+launchd.*
+__pycache__/
