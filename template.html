@@ -236,10 +236,46 @@ function rankPage(key,data,title,note){const h=$('#p-'+key);
 RENDER.jp=()=>rankPage('jp',D.lezhin.jp,'웹툰 JP · 레진 JP 일간 랭킹','레진 재팬(2025 웹툰 일본 104억). 공개 API는 순위·순위 변동만 제공(조회수 없음). 벨툰JP는 앱·국가 탭');
 RENDER.snack=()=>rankPage('snack',D.snack,'영상 · 레진스낵 숏드라마 랭킹','영상 부문(3Q26 매출 12억, 영업손실 19억). 공개 데이터는 순위 30위와 앱 설치수(앱·국가 탭)');
 
+/* ---------- 레진 앱 양마켓 다운로드·평점 추이 ---------- */
+function lzMarket(host){const P=PAL();const CC={kr:'KR',us:'US',jp:'JP'};
+ const at=(arr,d)=>{if(!arr||!arr.length)return null;let r=null;for(const x of arr){if(x.d<=d)r=x}return r};
+ const back=(arr,days)=>{if(!arr||!arr.length)return null;const L=arr[arr.length-1];const t=new Date(L.d+'T12:00:00Z');t.setUTCDate(t.getUTCDate()-days);return at(arr,t.toISOString().slice(0,10))};
+ const dv=(a,b,k)=>a&&b&&a!==b&&a[k]!=null&&b[k]!=null?a[k]-b[k]:null;
+ host.innerHTML=(D.lz_mkt||[]).map((m,i)=>`<div class="card"><h2>${m.label} · 양마켓 다운로드·평점 추이</h2>
+  <p class="cap">구글플레이는 정확 누적 설치수, 앱스토어는 다운로드가 공개되지 않아 평점 수(KR+US+JP)를 대용 지표로 씁니다. 일자별 마지막 스냅샷 · ${m.play.length?m.play[0].d:'—'}부터 누적</p>
+  <div class="kpis" id="lzk${i}"></div>
+  <div class="two"><div><h3 class="cap">다운로드 추이</h3><div class="ch-box"><canvas id="lzd${i}"></canvas></div></div><div><h3 class="cap">평점 추이</h3><div class="ch-box"><canvas id="lzr${i}"></canvas></div></div></div>
+  <div id="lzt${i}" style="margin-top:10px"></div></div>`).join('');
+ (D.lz_mkt||[]).forEach((m,i)=>{
+  const days=[...new Set([...m.play.map(x=>x.d),...Object.values(m.ios).flatMap(a=>a.map(x=>x.d))])].sort();
+  const lab=days.map(d=>d.slice(5));
+  const iosSum=days.map(d=>{const v=Object.values(m.ios).map(a=>{const x=at(a,d);return x&&x.rc});return v.some(x=>x!=null)?v.reduce((s,x)=>s+(x||0),0):null});
+  const pm=Object.fromEntries(m.play.map(x=>[x.d,x]));
+  chart('lzd'+i,{data:{labels:lab,datasets:[
+   {type:'line',label:'구글플레이 누적 설치',data:days.map(d=>pm[d]?pm[d].inst:null),borderColor:P[0],backgroundColor:P[0],pointRadius:3,tension:.2,yAxisID:'y',spanGaps:true},
+   {type:'line',label:'앱스토어 평점 수 (KR+US+JP)',data:iosSum,borderColor:P[2],backgroundColor:P[2],pointRadius:3,borderDash:[5,4],tension:.2,yAxisID:'y1',spanGaps:true}]},
+   options:{scales:{x:{},y:{ticks:{precision:0,callback:v=>nf(v)}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{precision:0,callback:v=>nf(v)}}}}});
+  const rs=[{label:'구글플레이',arr:m.play}].concat(Object.entries(m.ios).map(([k,a])=>({label:'앱스토어 '+CC[k],arr:a})));
+  chart('lzr'+i,{type:'line',data:{labels:lab,datasets:rs.map((s,j)=>{const mm=Object.fromEntries(s.arr.map(x=>[x.d,x.rating]));return{label:s.label,data:days.map(d=>mm[d]??null),borderColor:P[j],backgroundColor:P[j],pointRadius:3,tension:.2,spanGaps:true}})},
+   options:{scales:{x:{},y:{suggestedMin:1,suggestedMax:5,ticks:{callback:v=>nf(v,1)}}}}});
+  const L=m.play[m.play.length-1],P1=back(m.play,1);
+  const k=[];if(L){const di=dv(L,P1,'inst');k.push(['구글플레이 누적 설치',nf(L.inst),di!=null?`전일 대비 <b class="${cls(di)}">${sg(di)}</b>`:'전일 비교는 2일차부터'],['구글플레이 평점',nf(L.rating,2),`평점 수 ${nf(L.rc)}`])}
+  Object.entries(m.ios).forEach(([c,a])=>{const x=a[a.length-1];k.push([`앱스토어 ${CC[c]} 평점`,nf(x.rating,2),`평점 수 ${nf(x.rc)}`])});
+  $('#lzk'+i).innerHTML=k.map(([l,v,s])=>`<div class="kpi" style="cursor:default"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
+  const rows=rs.map(s=>{const a=s.arr,x=a[a.length-1],d1=back(a,1),d7=back(a,7),f=a[0];
+   return{mk:s.label,rating:x&&x.rating,r1:dv(x,d1,'rating'),r7:dv(x,d7,'rating'),r0:dv(x,f,'rating'),rc:x&&x.rc,rc1:dv(x,d1,'rc'),rc7:dv(x,d7,'rc'),
+    inst:x&&x.inst!=null?x.inst:null,i1:dv(x,d1,'inst'),i7:dv(x,d7,'inst')}});
+  const f3=v=>v==null?'—':(v>0?'+':'')+nf(v,3);
+  table($('#lzt'+i),[{k:'mk',l:'마켓'},{k:'rating',l:'평점',n:1,f:v=>nf(v,3)},{k:'r1',l:'전일 대비',n:1,f:f3,cl:cls},{k:'r7',l:'7일 대비',n:1,f:f3,cl:cls},{k:'r0',l:'첫 수집 대비',n:1,f:f3,cl:cls},
+   {k:'rc',l:'평점 수',n:1,f:v=>nf(v)},{k:'rc1',l:'평점 수 전일',n:1,f:v=>sg(v),cl:cls},{k:'rc7',l:'평점 수 7일',n:1,f:v=>sg(v),cl:cls},
+   {k:'inst',l:'누적 설치',n:1,f:v=>nf(v)},{k:'i1',l:'설치 전일',n:1,f:v=>sg(v),cl:cls},{k:'i7',l:'설치 7일',n:1,f:v=>sg(v),cl:cls}],rows)})}
+
 RENDER.apps=()=>{const h=$('#p-apps');
- h.innerHTML=`<div class="page-head"><h1>앱 · 국가별</h1><p>구글플레이 정확 설치수(국가별 스토어)와 앱스토어 평점 수. 플랫폼 이용자 저변의 선행지표</p></div>
+ h.innerHTML=`<div class="page-head"><h1>앱 · 국가별</h1><p>구글플레이 정확 설치수(국가별 스토어)와 앱스토어 평점 수. 플랫폼 이용자 저변의 선행지표. AI챗 티즈는 웹 전용(myteaz.io)이라 마켓 지표가 없습니다</p></div>
+ <div id="lzm"></div>
  <div class="two"><div class="card"><h2>구글플레이 설치수</h2><div class="ch-box"><canvas id="ap1"></canvas></div></div><div class="card"><h2>앱스토어 평점 수</h2><div class="ch-box"><canvas id="ap2"></canvas></div></div></div>
  <div id="apf"></div><div class="card"><h2>구글플레이</h2><div id="ap3"></div></div><div class="card"><h2>앱스토어</h2><div id="ap4"></div></div>`;
+ lzMarket($('#lzm'));
  const a=D.apps.slice().sort((x,y)=>y.installs-x.installs);
  chart('ap1',{type:'bar',data:{labels:a.map(x=>x.name),datasets:[{label:'설치수',data:a.map(x=>x.installs),backgroundColor:PAL()[0]}]},options:{indexAxis:'y',scales:{x:{ticks:{callback:v=>nf(v/1e4)+'만'}},y:{}}}});
  const s=D.appstore.slice().sort((x,y)=>y.rc-x.rc);

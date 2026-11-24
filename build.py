@@ -133,6 +133,21 @@ app_series = {pn.get(k, (k,''))[0]: [(t, PD[t][k][2]) for t in pts if k in PD[t]
 ast = [dict(country=r[0], name=r[1], rc=r[2], rating=r[3]) for r in c.execute(
     'select country,name,rating_count,rating from appstore where ts=(select max(ts) from appstore)')]
 
+# 레진 앱 양마켓 추이: 일자별 마지막 스냅샷 (플레이=정확 설치수·평점, 앱스토어=국가별 평점 수·평점)
+def by_day(rows):
+    d = {}
+    for r in sorted(rows): d[r[0][:10]] = r
+    return [d[k] for k in sorted(d)]
+lz_mkt = []
+for pkg, tid, label in [('com.lezhin.comics', 664973122, '레진코믹스'), ('com.lezhin.snack', 6751880104, '레진스낵')]:
+    play = [dict(d=r[0][:10], ts=r[0], inst=r[1], rc=r[2], rating=r[3]) for r in by_day(
+        c.execute('select ts,installs,rating_count,rating from play where pkg=?', (pkg,)).fetchall())]
+    ios = {}
+    for cc in ('kr', 'us', 'jp'):
+        rows = by_day(c.execute('select ts,rating_count,rating from appstore where track_id=? and country=?', (tid, cc)).fetchall())
+        if rows: ios[cc] = [dict(d=r[0][:10], rc=r[1], rating=r[2]) for r in rows]
+    lz_mkt.append(dict(label=label, pkg=pkg, play=play, ios=ios))
+
 hf = os.path.join(BASE, 'benchmark', 'topco_chars_hist.json')
 topco_d7 = {}
 if os.path.exists(hf):
@@ -146,7 +161,7 @@ payload = dict(topco_d7=topco_d7,
     teaz=dict(chars=chars, series=series, top=top, daily=daily, recon=recon, cum=cum, days=days, basis=basis,
               basis_label='직전 24h 환산' if daily else f'출시 후 {days}일 평균'),
     lezhin=dict(kr=lezhin('kr'), us=lezhin('us'), jp=ranking('lezhin_jp', 'https://lezhin.jp/comic/')),
-    snack=ranking('snack', None), apps=apps, app_series=app_series, appstore=ast,
+    snack=ranking('snack', None), apps=apps, app_series=app_series, appstore=ast, lz_mkt=lz_mkt,
     fin=json.load(open(os.path.join(BASE, 'data', 'finance.json'))),
     price=json.load(open(os.path.join(BASE, 'data', 'price.json'))),
     topco=json.load(open(os.path.join(BASE, 'benchmark', 'toptoonchat.json'))),
