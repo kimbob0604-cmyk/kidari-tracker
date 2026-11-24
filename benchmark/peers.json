@@ -7,10 +7,36 @@
       "region": "KR·JP·TW·북미",
       "type": "웹툰 IP 캐릭터챗",
       "rows": [
-        {"metric": "방문 MAU", "from": "22만 (2026.03)", "to": "48만 (2026.09)", "g": 118.2, "period": "6개월"},
-        {"metric": "챗 매출", "from": "2.5억 (1Q26, 3월만)", "to": "20.4억 (2Q26)", "g": 716, "period": "QoQ"},
-        {"metric": "MAU당 월매출 (ARPU)", "from": "1,136원 (1Q26)", "to": "1,838원 (2Q26)", "g": 61.8, "period": "QoQ", "calc": "분기 월평균 챗 매출 ÷ 분기말 MAU. 1Q 2.5억÷22만, 2Q (20.4억÷3)÷37만"},
-        {"metric": "공개 트래커 하루 세션", "from": "6,763 (9월 평균)", "to": "4,468 (11월 평균)", "g": -33.9, "period": "2개월", "dyn": "topco_sep_nov"}
+        {
+          "metric": "방문 MAU",
+          "from": "22만 (2026.03)",
+          "to": "48만 (2026.09)",
+          "g": 118.2,
+          "period": "6개월"
+        },
+        {
+          "metric": "챗 매출",
+          "from": "2.5억 (1Q26, 3월만)",
+          "to": "20.4억 (2Q26)",
+          "g": 716,
+          "period": "QoQ"
+        },
+        {
+          "metric": "MAU당 월매출 (ARPU)",
+          "from": "1,136원 (1Q26)",
+          "to": "1,838원 (2Q26)",
+          "g": 61.8,
+          "period": "QoQ",
+          "calc": "분기 월평균 챗 매출 ÷ 분기말 MAU. 1Q 2.5억÷22만, 2Q (20.4억÷3)÷37만"
+        },
+        {
+          "metric": "공개 트래커 하루 세션",
+          "from": "6,763 (9월 평균)",
+          "to": "4,468 (11월 평균)",
+          "g": -33.9,
+          "period": "2개월",
+          "dyn": "topco_sep_nov"
+        }
       ],
       "src": "DS투자증권 탑코미디어 리포트(챗 매출·MAU), rsm0kk.github.io/toptoonchat 공개 트래커(세션). 3Q26 분기보고서(DART 20261113001701)에는 탑툰챗 매출·MAU 미기재"
     },
@@ -19,21 +45,65 @@
       "region": "글로벌·중국",
       "type": "AI 캐릭터챗 (UGC, 여성·로맨스 비중 큼)",
       "rows": [
-        {"metric": "평균 MAU", "from": "1,240만 (9M24)", "to": "2,005만 (9M25)", "g": 61.7, "period": "YoY"},
-        {"metric": "유료 이용자", "from": "48.9만 (9M24)", "to": "139.0만 (9M25)", "g": 184.3, "period": "YoY"},
-        {"metric": "유료 전환율 (유료÷MAU)", "from": "3.9%", "to": "6.9%", "g": 75.8, "period": "YoY", "calc": "유료 이용자 ÷ 평균 MAU"},
-        {"metric": "ARPPU", "from": "US$7 (9M24)", "to": "US$5 (9M25)", "g": -28.6, "period": "YoY", "calc": "기간 기준(월 아님). 광고 매출 제외 유료 매출 ÷ 유료 이용자로 맞춰짐"},
-        {"metric": "MAU (연간)", "from": "290.5만 (FY23)", "to": "1,469.2만 (FY24)", "g": 405.8, "period": "YoY"}
+        {
+          "metric": "평균 MAU",
+          "from": "1,240만 (9M24)",
+          "to": "2,005만 (9M25)",
+          "g": 61.7,
+          "period": "YoY"
+        },
+        {
+          "metric": "유료 이용자",
+          "from": "48.9만 (9M24)",
+          "to": "139.0만 (9M25)",
+          "g": 184.3,
+          "period": "YoY"
+        },
+        {
+          "metric": "유료 전환율 (유료÷MAU)",
+          "from": "3.9%",
+          "to": "6.9%",
+          "g": 75.8,
+          "period": "YoY",
+          "calc": "9개월 중 1회 이상 결제한 이용자 ÷ 월평균 MAU"
+        },
+        {
+          "metric": "ARPPU",
+          "from": "US$7 (9M24)",
+          "to": "US$5 (9M25)",
+          "g": -28.6,
+          "period": "YoY",
+          "calc": "원문 정의: 인앱 충전·구독 매출 ÷ 해당 기간 유료 이용자(기간 기준, 광고 매출 제외)"
+        },
+        {
+          "metric": "MAU (연간)",
+          "from": "290.5만 (FY23)",
+          "to": "1,469.2만 (FY24)",
+          "g": 405.8,
+          "period": "YoY"
+        }
       ],
-      "src": "MiniMax 홍콩 상장 투자설명서(2025.12, HKEX). 영문 요약본(saranormous.github.io/filing-websites/minimax) 기준이며 유료 이용자 +184%·MAU 약 2,000만은 itiger·ChinaTalk 보도와 일치. ARPPU 하락 방향은 Douglas Research와 일치. 2026년 Talkie 단독 지표는 미공개"
+      "src": "MiniMax 홍콩 상장 최종 투자설명서(HKEX, 2025.12.31, 종목코드 0100) 본문 242쪽(유료 이용자·MAU 표), 244쪽(ARPPU 표·정의)에서 원문 대조 완료. 유료 이용자 = 기간 중 1회 이상 결제. MAU = 월별 활동 기기·계정의 기간 평균. 2026년 Talkie 단독 지표는 미공개"
     },
     {
       "name": "筑梦岛 (阅文集团)",
       "region": "중국",
       "type": "웹소설 IP 캐릭터챗 (이용자 90% 여성)",
       "rows": [
-        {"metric": "가입자", "from": "—", "to": "500만 (2025.01)", "g": null, "period": "—"},
-        {"metric": "유료 비중 / 재결제율", "from": "—", "to": "약 20% / 55% (2025.01)", "g": null, "period": "—"}
+        {
+          "metric": "가입자",
+          "from": "—",
+          "to": "500만 (2025.01)",
+          "g": null,
+          "period": "—"
+        },
+        {
+          "metric": "유료 비중 / 재결제율",
+          "from": "—",
+          "to": "약 20% / 55% (2025.01)",
+          "g": null,
+          "period": "—"
+        }
       ],
       "src": "36Kr·经济观察网 보도(2025.01). MAU·ARPPU 추이 미공개"
     },
@@ -42,7 +112,13 @@
       "region": "일본",
       "type": "웹툰 IP 캐릭터챗 (로맨스판타지)",
       "rows": [
-        {"metric": "누적 메시지", "from": "출시 2026.02", "to": "1,000만 (2026.06)", "g": null, "period": "—"}
+        {
+          "metric": "누적 메시지",
+          "from": "출시 2026.02",
+          "to": "1,000만 (2026.06)",
+          "g": null,
+          "period": "—"
+        }
       ],
       "src": "LINE Digital Frontier 보도자료(PR TIMES, 2026.06). MAU·ARPPU 미공개. '작품 매출 약 6배'는 2차 인용이라 제외"
     },
@@ -51,7 +127,13 @@
       "region": "중국",
       "type": "만화 IP 캐릭터챗",
       "rows": [
-        {"metric": "MAU·ARPPU", "from": "—", "to": "미공개", "g": null, "period": "—"}
+        {
+          "metric": "MAU·ARPPU",
+          "from": "—",
+          "to": "미공개",
+          "g": null,
+          "period": "—"
+        }
       ],
       "src": "2026.02 AI 互动漫画, 2026.06 Livo 발표. 이용 지표 미공개"
     },
@@ -60,14 +142,38 @@
       "region": "KR·글로벌",
       "type": "BL 특화 캐릭터챗 (IP 비기반)",
       "rows": [
-        {"metric": "MAU·ARPPU", "from": "—", "to": "미공개", "g": null, "period": "—"}
+        {
+          "metric": "MAU·ARPPU",
+          "from": "—",
+          "to": "미공개",
+          "g": null,
+          "period": "—"
+        }
       ],
       "src": "앱 마켓 소개만 확인, 이용 지표 미공개"
     }
   ],
   "cases": {
-    "Bear": {"label": "탑툰챗 최근 추세", "mauG": -33.9, "conv": 1.0, "arppuG": -28.6, "why": "MAU = 탑툰챗 하루 세션 9월→11월, ARPPU = Talkie 9M YoY"},
-    "Base": {"label": "Talkie/星野 YoY", "mauG": 61.7, "conv": 1.76, "arppuG": -28.6, "why": "MiniMax 9M24→9M25: MAU +62%, 유료 전환율 ×1.76, ARPPU −29%"},
-    "Bull": {"label": "탑툰챗 출시 초기", "mauG": 118.2, "conv": 1.0, "arppuG": 61.8, "why": "탑툰챗 MAU 3월→9월 ×2.18, MAU당 월매출 1Q→2Q +62% (전환율 효과 포함)"}
+    "Bear": {
+      "label": "탑툰챗 최근 추세",
+      "mauG": -33.9,
+      "conv": 1.0,
+      "arppuG": -28.6,
+      "why": "MAU = 탑툰챗 하루 세션 9월→11월, ARPPU = Talkie 9M YoY"
+    },
+    "Base": {
+      "label": "Talkie/星野 YoY",
+      "mauG": 61.7,
+      "conv": 1.76,
+      "arppuG": -28.6,
+      "why": "MiniMax 9M24→9M25: MAU +62%, 유료 전환율 ×1.76, ARPPU −29%"
+    },
+    "Bull": {
+      "label": "탑툰챗 출시 초기",
+      "mauG": 118.2,
+      "conv": 1.0,
+      "arppuG": 61.8,
+      "why": "탑툰챗 MAU 3월→9월 ×2.18, MAU당 월매출 1Q→2Q +62% (전환율 효과 포함)"
+    }
   }
 }
