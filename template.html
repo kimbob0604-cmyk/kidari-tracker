@@ -175,6 +175,7 @@ RENDER.sum=()=>{const L=D.lezhin;const p=D.price;const n=p.c.length;const chg=(p
   <button class="kpi" data-go="kr"><div class="l">레진 KR Top100 조회 증분</div><div class="v">${sg(L.kr.dv)}</div><div class="s">24h 환산 · 2회차 수집부터</div></button>
   <button class="kpi" data-go="us"><div class="l">레진 US Top100 조회 증분</div><div class="v">${sg(L.us.dv)}</div><div class="s">24h 환산 · 2회차 수집부터</div></button>
   <button class="kpi" data-go="fin"><div class="l">3Q26 매출 / 영업이익</div><div class="v">595억 / 43억</div><div class="s">YoY +12.8% / +21.1%</div></button>
+  ${(()=>{const M=estModel(estLoad()).Base,A=F.fs.ANN['2025'];return [2027,2028].map(y=>{const m=M[y],pv=y==2027?M[2026]:M[2027];return`<button class="kpi" data-go="est"><div class="l">${y}E 매출 / 영업이익 (Base)</div><div class="v">${nf(m.rev)}억 / ${nf(m.op)}억</div><div class="s">YoY ${pct((m.rev/pv.rev-1)*100)} / ${pct((m.op/pv.op-1)*100)} · OPM ${nf(m.op/m.rev*100,1)}%</div></button>`}).join('')})()}
   <button class="kpi" data-go="topco"><div class="l">탑툰챗 하루 세션(11월)</div><div class="v">${nf(avgM(D.topco,'ALL',D.topco.dates[D.topco.dates.length-1].slice(0,7)))}</div><div class="s">9월 대비 ${pct((avgM(D.topco,'ALL',D.topco.dates[D.topco.dates.length-1].slice(0,7))/avgM(D.topco,'ALL','2026-09')-1)*100)}</div></button>
  </div>
  <div class="card note bad"><b>티즈 현재 속도로는</b> 연 ${nf(annRev(tz.basis,50),1)}억(상한) → 2027E Bear 30억에 ${nf(30/annRev(tz.basis,50),0)}배, 회사 Base 165억에 ${nf(165/annRev(tz.basis,50),0)}배 모자람. 성장 경로는 계산기 탭에서 탑코 케이스로 확인</div>
@@ -336,16 +337,25 @@ RENDER.mix=()=>{const S=F.seg,h=$('#p-mix');const segs=Object.keys(S.rev);const 
 
 function avgM(T,r,m){const v=T.dates.map((d,i)=>[d,T.regions[r].dS[i]]).filter(([d,x])=>d.startsWith(m)&&x!=null).map(x=>x[1]);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
 
-/* ---------- 27·28 추정 ---------- */
-RENDER.est=()=>{const h=$('#p-est');const S0=F.seg,cs=['Bear','Base','Bull'],SG=['웹툰','MD','영상','웹소설','티즈'];
- const q=k=>S0.rev[k].slice(4,7),qo=k=>S0.op[k].slice(4,7),sum=a=>a.reduce((x,y)=>x+y,0);
- const DEF={q4:{wtY:5,wtO:45,md:89.1,mdO:25,vd:15,vdO:-20,nv:10,nvO:-1},
+/* ---------- 27·28 추정 모델 (요약·추정 탭 공용) ---------- */
+const EST_DEF={q4:{wtY:5,wtO:45,md:89.1,mdO:25,vd:15,vdO:-20,nv:10,nvO:-1},
   cases:{Bear:{g27:3,g28:2,im:20,mg27:0,mg28:0,mm:28,vd27:66,vo27:-70,vd28:66,vo28:-70,nv27:38,no27:-6,nv28:32,no28:-5,tz27:0,to27:-5,tz28:0,to28:-5},
    Base:{g27:8,g28:6,im:30,mg27:3,mg28:3,mm:29,vd27:80,vo27:-50,vd28:100,vo28:-30,nv27:38,no27:-5,nv28:32,no28:-4,tz27:3,to27:-3,tz28:8,to28:-2},
    Bull:{g27:12,g28:10,im:40,mg27:6,mg28:6,mm:31,vd27:100,vo27:-30,vd28:130,vo28:0,nv27:40,no27:-4,nv28:35,no28:-3,tz27:42.4,to27:7.6,tz28:80,to28:16}},
   cost:{c27:46.5,c28:46,p27:19,p28:18.5,a27:9,a28:8.5,f27:5,f28:5,e27:7,e28:7,dep:110}};
- let S;try{S=JSON.parse(localStorage.getItem('kd_est1'))}catch(e){} if(!S||!S.cases)S=JSON.parse(JSON.stringify(DEF));
- S.q4=Object.assign({},DEF.q4,S.q4);S.cost=Object.assign({},DEF.cost,S.cost);cs.forEach(c=>S.cases[c]=Object.assign({},DEF.cases[c],S.cases[c]));
+function estLoad(){const cs=['Bear','Base','Bull'];let S;try{S=JSON.parse(localStorage.getItem('kd_est1'))}catch(e){} if(!S||!S.cases)S=JSON.parse(JSON.stringify(EST_DEF));S.q4=Object.assign({},EST_DEF.q4,S.q4);S.cost=Object.assign({},EST_DEF.cost,S.cost);cs.forEach(c=>S.cases[c]=Object.assign({},EST_DEF.cases[c],S.cases[c])); return S}
+function estModel(S){const S0=F.seg,cs=['Bear','Base','Bull'],SG=['웹툰','MD','영상','웹소설','티즈'];const q=k=>S0.rev[k].slice(4,7),qo=k=>S0.op[k].slice(4,7),sum=a=>a.reduce((x,y)=>x+y,0);const Q=S.q4;const b={};
+  b['웹툰']=[sum(q('웹툰'))+S0.rev['웹툰'][3]*(1+Q.wtY/100),sum(qo('웹툰'))+Q.wtO];b.MD=[sum(q('MD'))+Q.md,sum(qo('MD'))+Q.mdO];
+  b['영상']=[sum(q('영상'))+Q.vd,sum(qo('영상'))+Q.vdO];b['웹소설']=[sum(q('웹소설'))+Q.nv,sum(qo('웹소설'))+Q.nvO];b['티즈']=[0,0];
+  const out={};cs.forEach(c=>{const p=S.cases[c];const Y={2026:JSON.parse(JSON.stringify(b))};let w=b['웹툰'][0],wo=b['웹툰'][1],md=b.MD[0];
+   [27,28].forEach(y=>{const nw=w*(1+p['g'+y]/100);wo+= (nw-w)*p.im/100;w=nw;md*=1+p['mg'+y]/100;
+    Y[2000+y]={'웹툰':[w,wo],MD:[md,md*p.mm/100],'영상':[p['vd'+y],p['vo'+y]],'웹소설':[p['nv'+y],p['no'+y]],'티즈':[p['tz'+y],p['to'+y]]}});
+   [2026,2027,2028].forEach(y=>{Y[y].rev=SG.reduce((a,k)=>a+Y[y][k][0],0);Y[y].op=SG.reduce((a,k)=>a+Y[y][k][1],0)});out[c]=Y});return out}
+/* ---------- 27·28 추정 ---------- */
+RENDER.est=()=>{const h=$('#p-est');const S0=F.seg,cs=['Bear','Base','Bull'],SG=['웹툰','MD','영상','웹소설','티즈'];
+ const q=k=>S0.rev[k].slice(4,7),qo=k=>S0.op[k].slice(4,7),sum=a=>a.reduce((x,y)=>x+y,0);
+ const DEF=EST_DEF;
+ let S=estLoad();
  const save=()=>{try{localStorage.setItem('kd_est1',JSON.stringify(S))}catch(e){}};
  const A25=F.fs.ANN['2025'],a25=S0.annual;const i25=a25.Y.indexOf('2025');
  const ROWS=[['g27','웹툰 매출 성장 2027(%)','2026 분기 YoY 22→28→17%로 둔화'],['g28','웹툰 매출 성장 2028(%)',''],['im','웹툰 증분마진(%)','2026 분기 실적 42·39·38%. 급여·광고비 +28%를 감안해 낮춤'],
@@ -366,13 +376,7 @@ RENDER.est=()=>{const h=$('#p-est');const S0=F.seg,cs=['Bear','Base','Bull'],SG=
   <div class="fin-in" style="margin-top:8px"><label>감가·무형상각(억, 연)<input type="number" step="any" id="edep"></label></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="dir" id="ereset">기본값으로</button><button class="dir" id="etocalc">Base 2027E를 계산기 본업 값으로</button><span class="muted" id="emsg"></span></div></div>
  <p class="cap">4Q26 가정·성장률·증분마진은 공시·증권사 수치가 아닌 추정 가정. 부문 OP 합 = 전사 OP(3Q26 43.1억 일치)라 본사 공통비는 따로 두지 않음. 부문 OP 일부는 DS투자증권 표(십억원 반올림)</p>`;
- function model(){const Q=S.q4;const b={};
-  b['웹툰']=[sum(q('웹툰'))+S0.rev['웹툰'][3]*(1+Q.wtY/100),sum(qo('웹툰'))+Q.wtO];b.MD=[sum(q('MD'))+Q.md,sum(qo('MD'))+Q.mdO];
-  b['영상']=[sum(q('영상'))+Q.vd,sum(qo('영상'))+Q.vdO];b['웹소설']=[sum(q('웹소설'))+Q.nv,sum(qo('웹소설'))+Q.nvO];b['티즈']=[0,0];
-  const out={};cs.forEach(c=>{const p=S.cases[c];const Y={2026:JSON.parse(JSON.stringify(b))};let w=b['웹툰'][0],wo=b['웹툰'][1],md=b.MD[0];
-   [27,28].forEach(y=>{const nw=w*(1+p['g'+y]/100);wo+= (nw-w)*p.im/100;w=nw;md*=1+p['mg'+y]/100;
-    Y[2000+y]={'웹툰':[w,wo],MD:[md,md*p.mm/100],'영상':[p['vd'+y],p['vo'+y]],'웹소설':[p['nv'+y],p['no'+y]],'티즈':[p['tz'+y],p['to'+y]]}});
-   [2026,2027,2028].forEach(y=>{Y[y].rev=SG.reduce((a,k)=>a+Y[y][k][0],0);Y[y].op=SG.reduce((a,k)=>a+Y[y][k][1],0)});out[c]=Y});return out}
+ function model(){return estModel(S)}
  let sel='Base';
  function draw(){const M=model(),P=PAL(),yrs=[2025,2026,2027,2028];const R25=A25['매출액'],O25=A25['영업이익'];
   const B=M.Base;
