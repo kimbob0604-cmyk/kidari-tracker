@@ -91,7 +91,7 @@ function chart(id,cfg){if(charts[id])charts[id].destroy();const el=document.getE
   const sc=cfg.options.scales||{};Object.values(sc).forEach(a=>{a.ticks=Object.assign({color:css('--muted')},a.ticks||{});a.grid=Object.assign({color:css('--grid')},a.grid||{})});
   charts[id]=new Chart(el,cfg)}
 
-const PAGES=[['sum','요약'],['teaz','AI챗 티즈'],['kr','웹툰 KR'],['us','웹툰 US'],['jp','웹툰 JP'],['snack','숏드라마'],['apps','앱·국가'],['price','주가'],['fin','재무 12Q'],['mix','기여도 분해'],['calc','계산기'],['topco','탑코 비교'],['def','정의']];
+const PAGES=[['sum','요약'],['teaz','AI챗 티즈'],['kr','웹툰 KR'],['us','웹툰 US'],['jp','웹툰 JP'],['snack','숏드라마'],['apps','앱·국가'],['price','주가'],['fin','재무 12Q'],['mix','기여도 분해'],['est','27·28 추정'],['calc','계산기'],['topco','탑코 비교'],['def','정의']];
 const pages={};
 function nav(){const t=$('#tabs');t.innerHTML=PAGES.map(([k,l])=>`<button class="tab" data-p="${k}">${l}</button>`).join('');
   t.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{location.hash=b.dataset.p});
@@ -336,12 +336,86 @@ RENDER.mix=()=>{const S=F.seg,h=$('#p-mix');const segs=Object.keys(S.rev);const 
 
 function avgM(T,r,m){const v=T.dates.map((d,i)=>[d,T.regions[r].dS[i]]).filter(([d,x])=>d.startsWith(m)&&x!=null).map(x=>x[1]);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
 
+/* ---------- 27·28 추정 ---------- */
+RENDER.est=()=>{const h=$('#p-est');const S0=F.seg,cs=['Bear','Base','Bull'],SG=['웹툰','MD','영상','웹소설','티즈'];
+ const q=k=>S0.rev[k].slice(4,7),qo=k=>S0.op[k].slice(4,7),sum=a=>a.reduce((x,y)=>x+y,0);
+ const DEF={q4:{wtY:5,wtO:45,md:89.1,mdO:25,vd:15,vdO:-20,nv:10,nvO:-1},
+  cases:{Bear:{g27:3,g28:2,im:20,mg27:0,mg28:0,mm:28,vd27:66,vo27:-70,vd28:66,vo28:-70,nv27:38,no27:-6,nv28:32,no28:-5,tz27:0,to27:-5,tz28:0,to28:-5},
+   Base:{g27:8,g28:6,im:30,mg27:3,mg28:3,mm:29,vd27:80,vo27:-50,vd28:100,vo28:-30,nv27:38,no27:-5,nv28:32,no28:-4,tz27:3,to27:-3,tz28:8,to28:-2},
+   Bull:{g27:12,g28:10,im:40,mg27:6,mg28:6,mm:31,vd27:100,vo27:-30,vd28:130,vo28:0,nv27:40,no27:-4,nv28:35,no28:-3,tz27:42.4,to27:7.6,tz28:80,to28:16}},
+  cost:{c27:46.5,c28:46,p27:19,p28:18.5,a27:9,a28:8.5,f27:5,f28:5,e27:7,e28:7,dep:110}};
+ let S;try{S=JSON.parse(localStorage.getItem('kd_est1'))}catch(e){} if(!S||!S.cases)S=JSON.parse(JSON.stringify(DEF));
+ S.q4=Object.assign({},DEF.q4,S.q4);S.cost=Object.assign({},DEF.cost,S.cost);cs.forEach(c=>S.cases[c]=Object.assign({},DEF.cases[c],S.cases[c]));
+ const save=()=>{try{localStorage.setItem('kd_est1',JSON.stringify(S))}catch(e){}};
+ const A25=F.fs.ANN['2025'],a25=S0.annual;const i25=a25.Y.indexOf('2025');
+ const ROWS=[['g27','웹툰 매출 성장 2027(%)','2026 분기 YoY 22→28→17%로 둔화'],['g28','웹툰 매출 성장 2028(%)',''],['im','웹툰 증분마진(%)','2026 분기 실적 42·39·38%. 급여·광고비 +28%를 감안해 낮춤'],
+  ['mg27','MD 성장 2027(%)','분기 YoY +27·+19·−3%'],['mg28','MD 성장 2028(%)',''],['mm','MD 영업이익률(%)','2025 29%, 3Q26 32%'],
+  ['vd27','영상 매출 2027(억)','TTM 76억'],['vo27','영상 OP 2027(억)','TTM −31억, 3Q26 −18.7억으로 확대 중'],['vd28','영상 매출 2028(억)',''],['vo28','영상 OP 2028(억)',''],
+  ['nv27','웹소설 매출 2027(억)','분기 YoY −8·−15·−20%'],['no27','웹소설 OP 2027(억)',''],['nv28','웹소설 매출 2028(억)',''],['no28','웹소설 OP 2028(억)',''],
+  ['tz27','티즈 매출 2027(억)','계산기: Base A 2.4억, Bull = 방법 B 42억'],['to27','티즈 OP 2027(억)',''],['tz28','티즈 매출 2028(억)',''],['to28','티즈 OP 2028(억)','']];
+ const CROWS=[['c','콘텐츠제작비(%)','2025 49.1% · 3Q26 47.0%'],['p','급여·퇴직·복리(%)','2025 19.9% · 3Q26 19.5% (YoY +28%)'],['a','광고선전비(%)','2025 8.5% · 3Q26 9.3%'],['f','지급수수료(%)','2025 5.3% · 3Q26 5.1%'],['e','상품·기타(%)','2025 7.1% · 3Q26 6.9%']];
+ h.innerHTML=`<div class="page-head"><h1>2027·2028 매출·영업이익 추정</h1><p>부문별 매출을 쌓고(웹툰은 증분마진으로 OP), 비용 항목 비율로 한 번 더 점검. 출발점 2026E = 1~3Q26 실적 + 4Q26 가정. 숫자를 바꾸면 바로 다시 계산되며 이 브라우저에 저장</p></div>
+ <div class="kpis" id="ek"></div>
+ <div class="two"><div class="card"><h2>매출 (억원)</h2><div class="ch-box"><canvas id="e1"></canvas></div></div><div class="card"><h2>영업이익 (억원)</h2><div class="ch-box"><canvas id="e2"></canvas></div></div></div>
+ <div class="card"><h2>케이스 요약</h2><div id="esum"></div></div>
+ <div class="card"><div class="bar" style="box-shadow:none;border:0;padding:0;margin-bottom:6px"><h2 style="margin:0 8px 0 0">부문별 상세</h2><div class="seg" id="ecs">${cs.map(c=>`<button data-c="${c}">${c}</button>`).join('')}</div></div><div id="edet"></div></div>
+ <div class="card"><h2>비용 항목으로 점검 (Base)</h2><p class="cap">아래 6개 항목 합 = 매출원가+판관비 (2025년 2,051억으로 일치). OP = 매출 − 항목 합. 콘텐츠제작비율 1%p ≈ OP 27억</p><div id="ecost"></div></div>
+ <div class="card"><h2>4Q26 가정 (2026E 출발점)</h2><div class="fin-in">${[['wtY','웹툰 4Q 매출 YoY(%)'],['wtO','웹툰 4Q OP(억)'],['md','MD 4Q 매출(억)'],['mdO','MD 4Q OP(억)'],['vd','영상 4Q 매출(억)'],['vdO','영상 4Q OP(억)'],['nv','웹소설 4Q 매출(억)'],['nvO','웹소설 4Q OP(억)']].map(([k,l])=>`<label>${l}<input type="number" step="any" data-q="${k}"></label>`).join('')}</div><p class="cap">4Q25 실적: 웹툰 ${nf(S0.rev['웹툰'][3],1)}억/OP ${nf(S0.op['웹툰'][3],1)}억 · MD ${nf(S0.rev.MD[3],1)}/${nf(S0.op.MD[3],1)} · 영상 ${nf(S0.rev['영상'][3],1)}/${nf(S0.op['영상'][3],1)} · 웹소설 ${nf(S0.rev['웹소설'][3],1)}/${nf(S0.op['웹소설'][3],1)}</p></div>
+ <div class="card"><h2>케이스 입력</h2><div class="tw"><table class="ct"><thead><tr><th>입력</th>${cs.map(c=>`<th class="n">${c}</th>`).join('')}<th>근거</th></tr></thead><tbody id="ein"></tbody></table></div>
+  <h2 style="margin-top:14px">비용 비율 (Base)</h2><div class="tw"><table class="ct"><thead><tr><th>항목</th><th class="n">2027E</th><th class="n">2028E</th><th>근거</th></tr></thead><tbody id="ecin"></tbody></table></div>
+  <div class="fin-in" style="margin-top:8px"><label>감가·무형상각(억, 연)<input type="number" step="any" id="edep"></label></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="dir" id="ereset">기본값으로</button><button class="dir" id="etocalc">Base 2027E를 계산기 본업 값으로</button><span class="muted" id="emsg"></span></div></div>
+ <p class="cap">4Q26 가정·성장률·증분마진은 공시·증권사 수치가 아닌 추정 가정. 부문 OP 합 = 전사 OP(3Q26 43.1억 일치)라 본사 공통비는 따로 두지 않음. 부문 OP 일부는 DS투자증권 표(십억원 반올림)</p>`;
+ function model(){const Q=S.q4;const b={};
+  b['웹툰']=[sum(q('웹툰'))+S0.rev['웹툰'][3]*(1+Q.wtY/100),sum(qo('웹툰'))+Q.wtO];b.MD=[sum(q('MD'))+Q.md,sum(qo('MD'))+Q.mdO];
+  b['영상']=[sum(q('영상'))+Q.vd,sum(qo('영상'))+Q.vdO];b['웹소설']=[sum(q('웹소설'))+Q.nv,sum(qo('웹소설'))+Q.nvO];b['티즈']=[0,0];
+  const out={};cs.forEach(c=>{const p=S.cases[c];const Y={2026:JSON.parse(JSON.stringify(b))};let w=b['웹툰'][0],wo=b['웹툰'][1],md=b.MD[0];
+   [27,28].forEach(y=>{const nw=w*(1+p['g'+y]/100);wo+= (nw-w)*p.im/100;w=nw;md*=1+p['mg'+y]/100;
+    Y[2000+y]={'웹툰':[w,wo],MD:[md,md*p.mm/100],'영상':[p['vd'+y],p['vo'+y]],'웹소설':[p['nv'+y],p['no'+y]],'티즈':[p['tz'+y],p['to'+y]]}});
+   [2026,2027,2028].forEach(y=>{Y[y].rev=SG.reduce((a,k)=>a+Y[y][k][0],0);Y[y].op=SG.reduce((a,k)=>a+Y[y][k][1],0)});out[c]=Y});return out}
+ let sel='Base';
+ function draw(){const M=model(),P=PAL(),yrs=[2025,2026,2027,2028];const R25=A25['매출액'],O25=A25['영업이익'];
+  const B=M.Base;
+  $('#ek').innerHTML=[['2026E 매출',nf(B[2026].rev),`YoY ${pct((B[2026].rev/R25-1)*100)}`],['2026E 영업이익',nf(B[2026].op),`OPM ${nf(B[2026].op/B[2026].rev*100,1)}%`],
+   ['Base 2027E',`${nf(B[2027].rev)} / ${nf(B[2027].op)}`,`매출 / OP · OPM ${nf(B[2027].op/B[2027].rev*100,1)}%`],['Base 2028E',`${nf(B[2028].rev)} / ${nf(B[2028].op)}`,`매출 / OP · OPM ${nf(B[2028].op/B[2028].rev*100,1)}%`]]
+   .map(([l,v,s])=>`<div class="kpi" style="cursor:default"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`).join('');
+  const ser=k=>cs.map((c,j)=>({label:c,data:[k=='rev'?R25:O25,...[2026,2027,2028].map(y=>M[c][y][k])],borderColor:P[j],backgroundColor:P[j]+'cc'}));
+  chart('e1',{type:'bar',data:{labels:['2025A','2026E','2027E','2028E'],datasets:ser('rev')},options:{scales:{x:{},y:{ticks:{callback:v=>nf(v)}}}}});
+  chart('e2',{type:'line',data:{labels:['2025A','2026E','2027E','2028E'],datasets:ser('op').map(d=>Object.assign(d,{pointRadius:3,tension:.2}))},options:{scales:{x:{},y:{ticks:{callback:v=>nf(v)}}}}});
+  $('#esum').innerHTML=`<div class="tw"><table><thead><tr><th>케이스</th><th class="n">2027E 매출</th><th class="n">YoY</th><th class="n">2027E OP</th><th class="n">OPM</th><th class="n">2028E 매출</th><th class="n">YoY</th><th class="n">2028E OP</th><th class="n">OPM</th></tr></thead><tbody>${cs.map(c=>{const m=M[c];return`<tr><td>${c}</td><td class="n">${nf(m[2027].rev)}</td><td class="n ${cls(m[2027].rev-m[2026].rev)}">${pct((m[2027].rev/m[2026].rev-1)*100)}</td><td class="n">${nf(m[2027].op)}</td><td class="n">${nf(m[2027].op/m[2027].rev*100,1)}%</td><td class="n">${nf(m[2028].rev)}</td><td class="n ${cls(m[2028].rev-m[2027].rev)}">${pct((m[2028].rev/m[2027].rev-1)*100)}</td><td class="n">${nf(m[2028].op)}</td><td class="n">${nf(m[2028].op/m[2028].rev*100,1)}%</td></tr>`}).join('')}</tbody></table></div>
+   <p class="cap" style="margin-top:6px">2025A 매출 ${nf(R25)}억 · OP ${nf(O25)}억 · TTM(4Q25~3Q26) 매출 ${nf(sum(F.fs.IS['매출액'].slice(-4)))}억 · OP ${nf(sum(F.fs.IS['영업이익'].slice(-4)))}억</p>`;
+  h.querySelectorAll('#ecs button').forEach(b=>b.classList.toggle('on',b.dataset.c==sel));const m=M[sel];
+  const seg25=k=>{const j=a25.rev[k];return j?[j[i25],a25.op[k][i25]]:[0,0]};
+  $('#edet').innerHTML=`<div class="tw"><table><thead><tr><th>부문</th>${yrs.map(y=>`<th class="n">${y}${y==2025?'A':'E'} 매출</th><th class="n">OP</th>`).join('')}</tr></thead><tbody>${SG.map(k=>`<tr><td>${k}</td>${yrs.map(y=>{const v=y==2025?seg25(k):m[y][k];return`<td class="n">${nf(v[0],1)}</td><td class="n ${cls(v[1])}">${nf(v[1],1)}</td>`}).join('')}</tr>`).join('')}
+   <tr><td><b>합계</b></td>${yrs.map(y=>{const r=y==2025?R25:m[y].rev,o=y==2025?O25:m[y].op;return`<td class="n"><b>${nf(r,1)}</b></td><td class="n"><b>${nf(o,1)}</b></td>`}).join('')}</tr>
+   <tr><td>OPM</td>${yrs.map(y=>{const r=y==2025?R25:m[y].rev,o=y==2025?O25:m[y].op;return`<td></td><td class="n">${nf(o/r*100,1)}%</td>`}).join('')}</tr></tbody></table></div><p class="cap" style="margin-top:6px">2025A 부문값은 연간 부문 표 기준(부문 OP 합이 전사 OP와 다를 수 있음)</p>`;
+  const C=S.cost,ck=y=>{const r=B[y].rev,s=y==2027?'27':'28';const it=CROWS.map(([k,l])=>[l.replace('(%)',''),r*C[k+s]/100]);it.push(['감가·무형상각',C.dep]);const tc=it.reduce((a,x)=>a+x[1],0);return{r,it,tc,op:r-tc}};
+  const k7=ck(2027),k8=ck(2028);
+  $('#ecost').innerHTML=`<div class="tw"><table><thead><tr><th>항목 (억원)</th><th class="n">2025A</th><th class="n">2027E</th><th class="n">2028E</th></tr></thead><tbody>
+   <tr><td>매출 (부문 합산 Base)</td><td class="n">${nf(F.seg.cost.rev[1],1)}</td><td class="n">${nf(k7.r,1)}</td><td class="n">${nf(k8.r,1)}</td></tr>
+   ${k7.it.map((x,i)=>{const a=Object.values(F.seg.cost.items)[[0,1,2,3,5,4][i]];return`<tr><td>${x[0]}</td><td class="n">${nf(a[1],1)}</td><td class="n">${nf(x[1],1)}</td><td class="n">${nf(k8.it[i][1],1)}</td></tr>`}).join('')}
+   <tr><td><b>OP (비용 항목 방식)</b></td><td class="n"><b>${nf(A25['영업이익'],1)}</b></td><td class="n"><b>${nf(k7.op,1)}</b></td><td class="n"><b>${nf(k8.op,1)}</b></td></tr>
+   <tr><td>OP (부문 합산 방식)</td><td class="n">—</td><td class="n">${nf(B[2027].op,1)}</td><td class="n">${nf(B[2028].op,1)}</td></tr>
+   <tr><td>차이</td><td class="n">—</td><td class="n ${cls(k7.op-B[2027].op)}">${sg(k7.op-B[2027].op,1)}</td><td class="n ${cls(k8.op-B[2028].op)}">${sg(k8.op-B[2028].op,1)}</td></tr></tbody></table></div>`}
+ function build(){h.querySelectorAll('[data-q]').forEach(el=>{el.value=S.q4[el.dataset.q];el.oninput=()=>{S.q4[el.dataset.q]=+el.value;save();draw()}});
+  $('#ein').innerHTML=ROWS.map(([k,l,d])=>`<tr><td>${l}</td>${cs.map(c=>`<td class="n"><input type="number" step="any" data-c="${c}" data-k="${k}" value="${S.cases[c][k]}"></td>`).join('')}<td class="d">${d}</td></tr>`).join('');
+  $('#ein').querySelectorAll('input').forEach(el=>el.oninput=()=>{S.cases[el.dataset.c][el.dataset.k]=+el.value;save();draw()});
+  $('#ecin').innerHTML=CROWS.map(([k,l,d])=>`<tr><td>${l}</td>${['27','28'].map(y=>`<td class="n"><input type="number" step="any" data-ck="${k+y}" value="${S.cost[k+y]}"></td>`).join('')}<td class="d">${d}</td></tr>`).join('');
+  $('#ecin').querySelectorAll('input').forEach(el=>el.oninput=()=>{S.cost[el.dataset.ck]=+el.value;save();draw()});
+  $('#edep').value=S.cost.dep;$('#edep').oninput=e=>{S.cost.dep=+e.target.value;save();draw()};draw()}
+ h.querySelectorAll('#ecs button').forEach(b=>b.onclick=()=>{sel=b.dataset.c;draw()});
+ $('#ereset').onclick=()=>{S=JSON.parse(JSON.stringify(DEF));save();build()};
+ $('#etocalc').onclick=()=>{const B=model().Base[2027];let C;try{C=JSON.parse(localStorage.getItem('kd_calc2'))}catch(e){}C=C||{};
+  C.core_rev=Math.round(B.rev-B['티즈'][0]);C.core_op=Math.round(B.op-B['티즈'][1]);try{localStorage.setItem('kd_calc2',JSON.stringify(C))}catch(e){}delete pages.calc;
+  $('#emsg').textContent=`계산기 본업: 매출 ${nf(C.core_rev)}억 · OP ${nf(C.core_op)}억 (티즈 제외)으로 반영`};
+ build()};
+
 RENDER.calc=()=>{const h=$('#p-calc');
  const DEF={daily:Math.round(tz.basis),core_rev:2636,core_op:218,kr_webtoon:1204,shares:35646926,per:12,tax:30,price:D.price.c[D.price.c.length-1],
   cases:{Bear:{mult:2,won:50,paid:30,recog:44,opm:-20,pen:3},Base:{mult:8.2,won:50,paid:60,recog:44,opm:18,pen:8},Bull:{mult:20,won:50,paid:100,recog:44,opm:25,pen:22}}};
  const PC=(D.peers||{}).cases||{};const liveBear=Math.round((avgM(D.topco,'ALL',D.topco.dates[D.topco.dates.length-1].slice(0,7))/avgM(D.topco,'ALL','2026-09')-1)*1000)/10;
  ['Bear','Base','Bull'].forEach(c=>{const q=PC[c]||{};Object.assign(DEF.cases[c],{mauG:c=='Bear'&&isFinite(liveBear)?liveBear:(q.mauG??0),conv:q.conv??1,arppuG:q.arppuG??0})});
- let S;try{S=JSON.parse(localStorage.getItem('kd_calc2'))}catch(e){} if(!S||!S.cases)S=JSON.parse(JSON.stringify(DEF));
+ let S;try{S=JSON.parse(localStorage.getItem('kd_calc2'))}catch(e){} if(!S||!S.cases)S=Object.assign(JSON.parse(JSON.stringify(DEF)),S||{});
  ['Bear','Base','Bull'].forEach(c=>{S.cases[c]=Object.assign({},DEF.cases[c],S.cases[c])});
  const ROWS=[['mult','A · 하루 메시지 배수(현재 대비)','탑코 1Q26→2Q26 챗 매출 ×8.2'],['won','A · 메시지당 과금(원)','탐방: 턴당 40→50원'],['paid','A · 유료 메시지 비중(%)','무료 턴 제외'],['recog','키다리 인식 비율(%)','작가 RS 후 파트너 50:50 → 100당 43~45'],['opm','티즈 영업이익률(%)','토큰비 파트너 부담. 회사 Base 30/165=18%'],['pen','B · 국내 웹툰 대비 챗 매출(%)','탑코 2Q26 22%'],
   ['mauG','C · MAU 성장률(%)',`Bear ${esc((PC.Bear||{}).label||'')} · Base ${esc((PC.Base||{}).label||'')} · Bull ${esc((PC.Bull||{}).label||'')}`],['conv','C · 유료 전환율 변화(배)','Base = Talkie 유료÷MAU 3.9%→6.9%'],['arppuG','C · ARPPU 성장률(%)','Talkie −29% / 탑툰챗 MAU당 월매출 +62%']];
