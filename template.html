@@ -339,9 +339,14 @@ function avgM(T,r,m){const v=T.dates.map((d,i)=>[d,T.regions[r].dS[i]]).filter((
 RENDER.calc=()=>{const h=$('#p-calc');
  const DEF={daily:Math.round(tz.basis),core_rev:2636,core_op:218,kr_webtoon:1204,shares:35646926,per:12,tax:30,price:D.price.c[D.price.c.length-1],
   cases:{Bear:{mult:2,won:50,paid:30,recog:44,opm:-20,pen:3},Base:{mult:8.2,won:50,paid:60,recog:44,opm:18,pen:8},Bull:{mult:20,won:50,paid:100,recog:44,opm:25,pen:22}}};
+ const PC=(D.peers||{}).cases||{};const liveBear=Math.round((avgM(D.topco,'ALL',D.topco.dates[D.topco.dates.length-1].slice(0,7))/avgM(D.topco,'ALL','2026-09')-1)*1000)/10;
+ ['Bear','Base','Bull'].forEach(c=>{const q=PC[c]||{};Object.assign(DEF.cases[c],{mauG:c=='Bear'&&isFinite(liveBear)?liveBear:(q.mauG??0),conv:q.conv??1,arppuG:q.arppuG??0})});
  let S;try{S=JSON.parse(localStorage.getItem('kd_calc2'))}catch(e){} if(!S||!S.cases)S=JSON.parse(JSON.stringify(DEF));
- const ROWS=[['mult','A · 하루 메시지 배수(현재 대비)','탑코 1Q26→2Q26 챗 매출 ×8.2'],['won','A · 메시지당 과금(원)','탐방: 턴당 40→50원'],['paid','A · 유료 메시지 비중(%)','무료 턴 제외'],['recog','키다리 인식 비율(%)','작가 RS 후 파트너 50:50 → 100당 43~45'],['opm','티즈 영업이익률(%)','토큰비 파트너 부담. 회사 Base 30/165=18%'],['pen','B · 국내 웹툰 대비 챗 매출(%)','탑코 2Q26 22%']];
- h.innerHTML=`<div class="page-head"><h1>티즈 기여도 계산기 · 탑코 케이스</h1><p>숫자를 바꾸면 바로 다시 계산. 방법 A = 트래커 실측 하루 메시지에서 출발, 방법 B = 탑툰챗처럼 국내 웹툰 매출의 일정 비율까지 챗이 붙는 경우. 분모는 2027E 본업(티즈 제외)</p></div>
+ ['Bear','Base','Bull'].forEach(c=>{S.cases[c]=Object.assign({},DEF.cases[c],S.cases[c])});
+ const ROWS=[['mult','A · 하루 메시지 배수(현재 대비)','탑코 1Q26→2Q26 챗 매출 ×8.2'],['won','A · 메시지당 과금(원)','탐방: 턴당 40→50원'],['paid','A · 유료 메시지 비중(%)','무료 턴 제외'],['recog','키다리 인식 비율(%)','작가 RS 후 파트너 50:50 → 100당 43~45'],['opm','티즈 영업이익률(%)','토큰비 파트너 부담. 회사 Base 30/165=18%'],['pen','B · 국내 웹툰 대비 챗 매출(%)','탑코 2Q26 22%'],
+  ['mauG','C · MAU 성장률(%)',`Bear ${esc((PC.Bear||{}).label||'')} · Base ${esc((PC.Base||{}).label||'')} · Bull ${esc((PC.Bull||{}).label||'')}`],['conv','C · 유료 전환율 변화(배)','Base = Talkie 유료÷MAU 3.9%→6.9%'],['arppuG','C · ARPPU 성장률(%)','Talkie −29% / 탑툰챗 MAU당 월매출 +62%']];
+ h.innerHTML=`<div class="page-head"><h1>티즈 기여도 계산기 · 탑코 케이스</h1><p>숫자를 바꾸면 바로 다시 계산. 방법 A = 트래커 실측 하루 메시지에서 출발, 방법 B = 탑툰챗처럼 국내 웹툰 매출의 일정 비율까지 챗이 붙는 경우, 방법 C = 현재 티즈 매출 속도에 피어의 MAU·유료 전환·ARPPU 성장률을 1년 적용. 분모는 2027E 본업(티즈 제외)</p></div>
+ <div class="card"><h2>피어 성장률 · 탑툰챗과 해외 캐릭터챗</h2><p class="cap" id="pnote"></p><div id="pcase"></div><div id="ptab" style="margin-top:12px"></div></div>
  <div class="card note"><b>탑코 벤치마크</b> · 챗 매출 1Q26 약 2.5억 → 2Q26 약 20.4억(×8.2, 국내 플랫폼의 22%) · 방문 MAU 3월 22만 → 9월 48만 · 공개 트래커 하루 세션 9월 ${nf(avgM(D.topco,'ALL','2026-09'))} → 11월 ${nf(avgM(D.topco,'ALL','2026-11'))}</div>
  <div class="card"><h2>공통 입력</h2><div class="fin-in">${[['core_rev','2027E 본업 매출(억)'],['core_op','2027E 본업 영업이익(억)'],['kr_webtoon','국내 웹툰 연매출(억, B)'],['daily','티즈 현재 하루 메시지'],['per','적용 PER(배)'],['tax','세율(%)'],['shares','유통주식(주)'],['price','현재 주가(원)']].map(([k,l])=>`<label>${l}<input type="number" step="any" data-g="${k}"></label>`).join('')}</div>
  <div class="tw"><table class="ct"><thead><tr><th>케이스 입력</th><th class="n">Bear</th><th class="n">Base</th><th class="n">Bull</th><th>근거</th></tr></thead><tbody id="cin"></tbody></table></div><button class="dir" id="creset" style="margin-top:8px">기본값으로</button></div>
@@ -354,14 +359,22 @@ RENDER.calc=()=>{const h=$('#p-calc');
  function calc(){const R={};['Bear','Base','Bull'].forEach(c=>{const p=S.cases[c],r={};
   r.mA=S.daily*p.mult;r.revA=r.mA*365*p.won*p.paid/100*p.recog/100/1e8;r.opA=r.revA*p.opm/100;r.rsA=r.revA/(S.core_rev+r.revA)*100;r.osA=r.opA/(S.core_op+r.opA)*100;r.psA=r.opA*(1-S.tax/100)*S.per*1e8/S.shares;
   r.revB=S.kr_webtoon*p.pen/100*p.recog/100;r.opB=r.revB*p.opm/100;r.rsB=r.revB/(S.core_rev+r.revB)*100;r.osB=r.opB/(S.core_op+r.opB)*100;r.psB=r.opB*(1-S.tax/100)*S.per*1e8/S.shares;
-  r.needB=r.revB*1e8/(365*p.won*p.paid/100*p.recog/100);r.xB=r.needB/S.daily;R[c]=r});
+  r.needB=r.revB*1e8/(365*p.won*p.paid/100*p.recog/100);r.xB=r.needB/S.daily;
+  r.rev0=S.daily*365*p.won*p.paid/100*p.recog/100/1e8;r.gC=(1+p.mauG/100)*p.conv*(1+p.arppuG/100);r.revC=r.rev0*r.gC;r.opC=r.revC*p.opm/100;r.rsC=r.revC/(S.core_rev+r.revC)*100;r.osC=r.opC/(S.core_op+r.opC)*100;r.psC=r.opC*(1-S.tax/100)*S.per*1e8/S.shares;R[c]=r});
   const rows=[['A · 2027 하루 메시지','mA',v=>nf(v)],['A · 티즈 매출','revA',v=>nf(v,1)],['A · 티즈 영업이익','opA',v=>nf(v,1)],['A · 매출 기여도','rsA',v=>nf(v,1)+'%'],['A · 영업이익 기여도','osA',v=>nf(v,1)+'%'],['A · 주당가치 기여(원)','psA',v=>nf(v)],
-   ['B · 티즈 매출','revB',v=>nf(v,1)],['B · 티즈 영업이익','opB',v=>nf(v,1)],['B · 매출 기여도','rsB',v=>nf(v,1)+'%'],['B · 영업이익 기여도','osB',v=>nf(v,1)+'%'],['B · 주당가치 기여(원)','psB',v=>nf(v)],['B가 요구하는 하루 메시지','needB',v=>nf(v)],['B 요구치 ÷ 현재','xB',v=>nf(v,1)+'배']];
+   ['B · 티즈 매출','revB',v=>nf(v,1)],['B · 티즈 영업이익','opB',v=>nf(v,1)],['B · 매출 기여도','rsB',v=>nf(v,1)+'%'],['B · 영업이익 기여도','osB',v=>nf(v,1)+'%'],['B · 주당가치 기여(원)','psB',v=>nf(v)],['B가 요구하는 하루 메시지','needB',v=>nf(v)],['B 요구치 ÷ 현재','xB',v=>nf(v,1)+'배'],
+   ['C · 현재 티즈 연환산 매출','rev0',v=>nf(v,2)],['C · 매출 성장 배수','gC',v=>nf(v,2)+'배'],['C · 티즈 매출','revC',v=>nf(v,2)],['C · 티즈 영업이익','opC',v=>nf(v,2)],['C · 매출 기여도','rsC',v=>nf(v,2)+'%'],['C · 영업이익 기여도','osC',v=>nf(v,2)+'%'],['C · 주당가치 기여(원)','psC',v=>nf(v,1)]];
   $('#cout').innerHTML=rows.map(([l,k,f])=>`<tr><td>${l}</td>${['Bear','Base','Bull'].map(c=>`<td class="n">${f(R[c][k])}</td>`).join('')}</tr>`).join('');
-  $('#cnote').textContent=`주당가치 기여 = 티즈 영업이익 × (1−세율) × PER ÷ 유통주식. 현재 주가 ${nf(S.price)}원 대비 Base A ${nf(R.Base.psA/S.price*100,1)}%, Base B ${nf(R.Base.psB/S.price*100,1)}%`;
+  $('#cnote').textContent=`주당가치 기여 = 티즈 영업이익 × (1−세율) × PER ÷ 유통주식. 현재 주가 ${nf(S.price)}원 대비 Base A ${nf(R.Base.psA/S.price*100,1)}%, Base B ${nf(R.Base.psB/S.price*100,1)}%, Base C ${nf(R.Base.psC/S.price*100,2)}%. C 성장 배수 = (1+MAU 성장) × 전환율 변화 × (1+ARPPU 성장)`;
   const P=PAL(),cs=['Bear','Base','Bull'];
-  chart('cc1',{type:'bar',data:{labels:cs,datasets:[{label:'A 매출 기여',data:cs.map(c=>R[c].rsA),backgroundColor:P[0]+'88'},{label:'A 영익 기여',data:cs.map(c=>R[c].osA),backgroundColor:P[0]},{label:'B 매출 기여',data:cs.map(c=>R[c].rsB),backgroundColor:P[1]+'88'},{label:'B 영익 기여',data:cs.map(c=>R[c].osB),backgroundColor:P[1]}]},options:{scales:{x:{},y:{ticks:{callback:v=>v+'%'}}}}});
-  chart('cc2',{type:'bar',data:{labels:cs,datasets:[{label:'방법 A',data:cs.map(c=>R[c].psA),backgroundColor:P[0]},{label:'방법 B',data:cs.map(c=>R[c].psB),backgroundColor:P[1]}]},options:{scales:{x:{},y:{}}}})}
+  chart('cc1',{type:'bar',data:{labels:cs,datasets:[{label:'A 매출 기여',data:cs.map(c=>R[c].rsA),backgroundColor:P[0]+'88'},{label:'A 영익 기여',data:cs.map(c=>R[c].osA),backgroundColor:P[0]},{label:'B 매출 기여',data:cs.map(c=>R[c].rsB),backgroundColor:P[1]+'88'},{label:'B 영익 기여',data:cs.map(c=>R[c].osB),backgroundColor:P[1]},{label:'C 매출 기여',data:cs.map(c=>R[c].rsC),backgroundColor:P[2]+'88'},{label:'C 영익 기여',data:cs.map(c=>R[c].osC),backgroundColor:P[2]}]},options:{scales:{x:{},y:{ticks:{callback:v=>v+'%'}}}}});
+  chart('cc2',{type:'bar',data:{labels:cs,datasets:[{label:'방법 A',data:cs.map(c=>R[c].psA),backgroundColor:P[0]},{label:'방법 B',data:cs.map(c=>R[c].psB),backgroundColor:P[1]},{label:'방법 C',data:cs.map(c=>R[c].psC),backgroundColor:P[2]}]},options:{scales:{x:{},y:{}}}})}
+ const PE=D.peers||{peers:[]};$('#pnote').textContent=PE.note||'';
+ const prow=[];PE.peers.forEach(x=>x.rows.forEach((r,i)=>{let g=r.g,to=r.to,fr=r.from;if(r.dyn=='topco_sep_nov'){const s9=avgM(D.topco,'ALL','2026-09'),lm=D.topco.dates[D.topco.dates.length-1].slice(0,7),sn=avgM(D.topco,'ALL',lm);fr=nf(s9)+' (9월 평균)';to=nf(sn)+` (${+lm.slice(5)}월 평균)`;g=(sn/s9-1)*100}
+  prow.push({peer:i?'':x.name,reg:i?'':x.region,metric:r.metric,from:fr,to,g,per:r.period,calc:r.calc||'',src:i?'':x.src})}));
+ table($('#ptab'),[{k:'peer',l:'피어'},{k:'reg',l:'지역'},{k:'metric',l:'지표'},{k:'from',l:'이전'},{k:'to',l:'최근'},{k:'g',l:'증가율',n:1,f:v=>v==null?'—':pct(v),cl:cls},{k:'per',l:'기간'}],prow);
+ $('#ptab').insertAdjacentHTML('beforeend',`<ul class="def" style="margin-top:8px;font-size:12px">${PE.peers.map(x=>`<li><b>${esc(x.name)}</b> · ${esc(x.type)} · ${esc(x.src)}${x.rows.filter(r=>r.calc).map(r=>` · ${esc(r.metric)}: ${esc(r.calc)}`).join('')}</li>`).join('')}</ul>`);
+ const pc=PE.cases||{};$('#pcase').innerHTML=`<div class="tw"><table><thead><tr><th>케이스</th><th>기준 피어</th><th class="n">MAU</th><th class="n">전환율</th><th class="n">ARPPU</th><th class="n">매출 배수</th><th>근거</th></tr></thead><tbody>${['Bear','Base','Bull'].map(c=>{const q=DEF.cases[c];return`<tr><td>${c}</td><td>${esc((pc[c]||{}).label||'')}</td><td class="n">${pct(q.mauG)}</td><td class="n">×${nf(q.conv,2)}</td><td class="n">${pct(q.arppuG)}</td><td class="n">${nf((1+q.mauG/100)*q.conv*(1+q.arppuG/100),2)}배</td><td class="d">${esc((pc[c]||{}).why||'')}</td></tr>`}).join('')}</tbody></table></div><p class="cap" style="margin-top:6px">아래 케이스 입력의 C 행 기본값. Bear MAU는 탑툰챗 트래커로 매일 갱신</p>`;
  $('#creset').onclick=()=>{S=JSON.parse(JSON.stringify(DEF));save();build()};build()};
 
 RENDER.topco=()=>{const T=D.topco,h=$('#p-topco');const P=PAL();
@@ -406,7 +419,7 @@ RENDER.def=()=>{$('#p-def').innerHTML=`<div class="page-head"><h1>정의와 한�
 
 /* ---------- 시작 ---------- */
 $('#stamp').textContent=`최신 스냅샷 ${D.last.replace('T',' ').slice(0,16)} · 생성 ${D.generated}`;
-$('#foot').textContent='공개 웹·앱 지표 기반 추정치이며 투자 권유가 아닙니다. 자료: myteaz.io, lezhin.com, lezhin.jp, lezhinsnack.com, Google Play, App Store, 네이버 증권, DART, DS투자증권, 탑툰챗 공개 트래커';
+$('#foot').textContent='공개 웹·앱 지표 기반 추정치이며 투자 권유가 아닙니다. 자료: myteaz.io, lezhin.com, lezhin.jp, lezhinsnack.com, Google Play, App Store, 네이버 증권, DART, DS투자증권, 탑툰챗 공개 트래커, MiniMax 투자설명서(HKEX)';
 try{const t=localStorage.getItem('kd_theme');if(t)document.documentElement.dataset.theme=t}catch(e){}
 $('#theme').onclick=()=>{const dark=document.documentElement.dataset.theme?document.documentElement.dataset.theme=='dark':matchMedia('(prefers-color-scheme: dark)').matches;
  document.documentElement.dataset.theme=dark?'light':'dark';try{localStorage.setItem('kd_theme',document.documentElement.dataset.theme)}catch(e){}
